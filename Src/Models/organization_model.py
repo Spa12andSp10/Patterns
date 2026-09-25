@@ -91,12 +91,15 @@ class organization_model(entity_model):
         :param value: Строка ИНН длиной 10 символов.
         :raises arguments_exeption: Если значение не строка или None.
         :raises length_exeption: Если длина не равна 10.
-        :raises validation_exeptoion: Если контрольная сумма некорректна.
+        :raises validation_exeptoion: Если значение содержит нецифры
+            или контрольная сумма некорректна.
         """
         if value is None or not isinstance(value, str):
             raise arguments_exeption("inn", "Некорректно переданный аргумент!")
         if len(value.strip()) != self.__len_inn:
             raise length_exeption("inn", self.__len_inn, "ИНН")
+        if value.isdigit() == False:
+            raise validation_exeptoion("inn", "ИНН должен состоять только из цифр!")
         if self.__check_inn(value) == False:
             raise validation_exeptoion("inn", "Некорректный ИНН!")
         self.__inn = value
@@ -113,11 +116,14 @@ class organization_model(entity_model):
         :param value: Строка БИК длиной 9 символов.
         :raises arguments_exeption: Если значение не строка или None.
         :raises length_exeption: Если длина не равна 9.
+        :raises validation_exeptoion: Если значение содержит нецифры.
         """
         if value is None or not isinstance(value, str):
             raise arguments_exeption("bic", "Некорректно переданный аргумент!")
         if len(value.strip()) != self.__len_bic:
             raise length_exeption("bic", self.__len_bic, "БИК")
+        if value.isdigit() == False:
+            raise validation_exeptoion("bic", "БИК должен состоять только из цифр!")
         self.__bic = value
 
     @property
@@ -132,12 +138,15 @@ class organization_model(entity_model):
         :param value: Строка счёта длиной 20 символов.
         :raises arguments_exeption: Если значение не строка или None.
         :raises length_exeption: Если длина не равна 20.
-        :raises validation_exeptoion: Если контрольная сумма некорректна.
+        :raises validation_exeptoion: Если значение содержит нецифры
+            или контрольная сумма некорректна.
         """
         if value is None or not isinstance(value, str):
             raise arguments_exeption("account", "Некорректно переданный аргумент!")
         if len(value.strip()) != self.__len_account:
             raise length_exeption("account", self.__len_account, "Счет")
+        if value.isdigit() == False:
+            raise validation_exeptoion("account", "Счет должен состоять только из цифр!")
         if self.__check_account(value) == False:
             raise validation_exeptoion("account", "Некорректный Счет!")
         self.__account = value
