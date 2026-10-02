@@ -1,5 +1,6 @@
 from Src.Core.entity_model import entity_model
 from Src.Core.exception import arguments_exeption, max_length_exeption
+from Src.Core.validator import validator
 
 
 class warehouse_model(entity_model):
@@ -35,8 +36,5 @@ class warehouse_model(entity_model):
         :raises arguments_exeption: Если значение не строка или None.
         :raises max_length_exeption: Если длина превышает максимально допустимую.
         """
-        if value is None or not isinstance(value, str):
-            raise arguments_exeption("address", "Некорректно переданный аргумент!")
-        if len(value.strip()) > self.__max_len_address:
-            raise max_length_exeption("address", self.__max_len_address)
+        validator.validate(value, str, "address", max_len=self.__max_len_address)
         self.__address = value

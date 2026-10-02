@@ -88,7 +88,7 @@ class length_exeption(base_exception):
         super().__init__(field, message, stack_trace)
 
 
-class validation_exeptoion(base_exception):
+class validation_exeption(base_exception):
     """Исключение о непройденной валидации значения поля."""
 
     def __init__(self, field: str, message: str, stack_trace: str = "") -> None:

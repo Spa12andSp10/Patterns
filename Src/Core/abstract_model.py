@@ -1,6 +1,6 @@
 from abc import ABC
 import uuid
-
+from Src.Core.validator import validator
 from Src.Core.exception import arguments_exeption
 
 
@@ -30,17 +30,14 @@ class abstact_model(ABC):
         :param value: Новый уникальный код (строка без пробелов по краям).
         :raises arguments_exeption: Если значение пустое или состоит из пробелов.
         """
-        if value is None or not isinstance(value, str) or value.strip() == "":
-            raise arguments_exeption("unique_code", "Некорректно переданный аргумент!")
+        validator.validate(value, str, "unique_code")
         self.__unique_code = value.strip()
 
     def __eq__(self, value: object) -> bool:
         """Сравнивает объекты по уникальному коду.
 
-        :param value: Объект для сравнения.
-        :return: True, если unique_code совпадает, иначе False.
-        :raises arguments_exeption: Если передан объект не типа abstact_model.
+        Если value — не abstact_model, возвращает False (не бросает исключение).
         """
         if not isinstance(value, abstact_model):
-            raise arguments_exeption("value", "Некорректно переданный аргумент")
+            return False
         return self.unique_code == value.unique_code

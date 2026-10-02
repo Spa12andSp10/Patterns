@@ -1,5 +1,6 @@
 from Src.Core.abstract_model import abstact_model
 from Src.Core.exception import arguments_exeption, max_length_exeption
+from Src.Core.validator import validator
 
 
 class entity_model(abstact_model):
@@ -25,10 +26,7 @@ class entity_model(abstact_model):
         :raises arguments_exeption: Если значение не строка, None или пустое.
         :raises max_length_exeption: Если длина превышает максимально допустимую.
         """
-        if value is None or not isinstance(value, str) or value.strip() == "":
-            raise arguments_exeption("name", "Некорректно переданный аргумент")
-        if len(value.strip()) > self.__max_length:
-            raise max_length_exeption("name", self.__max_length)
+        validator.validate(value, str, "name", max_len = self.__max_length)
         self.__name = value.strip()
 
     @property
