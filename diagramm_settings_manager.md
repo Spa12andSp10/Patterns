@@ -1,3 +1,4 @@
+```mermaid
 classDiagram
     class abstract_manager {
         <<abstract>>
@@ -66,3 +67,4 @@ classDiagram
     %% Агрегация (полый ромб) — "содержит"
     settings_manager  o--  settings_model : содержит
     settings_model  o--  organization_model : содержит
+```

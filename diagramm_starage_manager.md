@@ -1,3 +1,4 @@
+```mermaid
 classDiagram
     class abstract_manager {
         <<abstract>>
@@ -91,3 +92,4 @@ classDiagram
 
     %% Зависимость (пунктир) — "использует"
     storage_manager ..> settings_manager : использует
+```
