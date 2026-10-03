@@ -13,6 +13,10 @@ def _settings_path() -> str:
     """Путь к settings.json в папке Tst (рядом с тестом)."""
     return str(Path(__file__).resolve().parent / "settings.json")
 
+def _storage_path() -> str:
+    """Путь к storage_data.json (эталонные данные)."""
+    return str(Path(__file__).resolve().parent / "storage_data.json")
+
 
 @pytest.fixture(autouse=True)
 def reset_storage():
@@ -51,7 +55,7 @@ def test_valid_result_storage_manager_load_success():
     после вызова load() флаг is_loaded становится True.
     """
     sm = storage_manager()
-    sm.load(_settings_path())
+    sm.load(_storage_path())
     assert sm.is_loaded is True
 
 
@@ -64,7 +68,7 @@ def test_valid_result_storage_manager_groups_loaded():
     «Молочная продукция» и «Мясная продукция».
     """
     sm = storage_manager()
-    sm.load(_settings_path())
+    sm.load(_storage_path())
     assert len(sm.groups) == 4
     names = [g.name for g in sm.groups]
     assert "Молочная продукция" in names
@@ -80,7 +84,7 @@ def test_valid_result_storage_manager_ranges_loaded():
     «грамм» и «килограмм».
     """
     sm = storage_manager()
-    sm.load(_settings_path())
+    sm.load(_storage_path())
     assert len(sm.ranges) == 4
     names = [r.name for r in sm.ranges]
     assert "грамм" in names
@@ -97,7 +101,7 @@ def test_valid_result_storage_manager_range_base_linked():
     conversion_factor равен 1000.0.
     """
     sm = storage_manager()
-    sm.load(_settings_path())
+    sm.load(_storage_path())
     kg = next(r for r in sm.ranges if r.name == "килограмм")
     assert kg.base is not None
     assert kg.base.name == "грамм"
@@ -113,7 +117,7 @@ def test_valid_result_storage_manager_nomenclatures_loaded():
     «Молоко» и «Яблоко».
     """
     sm = storage_manager()
-    sm.load(_settings_path())
+    sm.load(_storage_path())
     assert len(sm.nomenclatures) == 4
     names = [n.name for n in sm.nomenclatures]
     assert "Молоко" in names
@@ -130,7 +134,7 @@ def test_valid_result_storage_manager_nomenclature_links():
     full_name = «Молоко пастеризованное 3.2%».
     """
     sm = storage_manager()
-    sm.load(_settings_path())
+    sm.load(_storage_path())
     milk = next(n for n in sm.nomenclatures if n.name == "Молоко")
     assert milk.group.name == "Молочная продукция"
     assert milk.range.name == "литр"
@@ -146,7 +150,7 @@ def test_valid_result_storage_manager_warehouses_loaded():
     и «Вспомогательный склад».
     """
     sm = storage_manager()
-    sm.load(_settings_path())
+    sm.load(_storage_path())
     assert len(sm.warehouses) == 2
     names = [w.name for w in sm.warehouses]
     assert "Основной склад" in names
@@ -164,7 +168,7 @@ def test_invalid_result_storage_manager_unique_ranges():
     размер списка ranges.
     """
     sm = storage_manager()
-    sm.load(_settings_path())
+    sm.load(_storage_path())
     before = len(sm.ranges)
     existing = sm.ranges[0]
     sm.add_range(existing)
@@ -180,7 +184,7 @@ def test_invalid_result_storage_manager_unique_groups():
     размер списка groups.
     """
     sm = storage_manager()
-    sm.load(_settings_path())
+    sm.load(_storage_path())
     before = len(sm.groups)
     sm.add_group(sm.groups[0])
     assert len(sm.groups) == before
@@ -195,7 +199,7 @@ def test_invalid_result_storage_manager_unique_nomenclatures():
     размер списка nomenclatures.
     """
     sm = storage_manager()
-    sm.load(_settings_path())
+    sm.load(_storage_path())
     before = len(sm.nomenclatures)
     sm.add_nomenclature(sm.nomenclatures[0])
     assert len(sm.nomenclatures) == before
@@ -210,7 +214,7 @@ def test_invalid_result_storage_manager_unique_warehouses():
     размер списка warehouses.
     """
     sm = storage_manager()
-    sm.load(_settings_path())
+    sm.load(_storage_path())
     before = len(sm.warehouses)
     sm.add_warehouse(sm.warehouses[0])
     assert len(sm.warehouses) == before
@@ -228,7 +232,7 @@ def test_valid_result_storage_manager_first_start_creates_data():
     """
     sm = storage_manager()
     settings_manager().settings.first_launch_flag = True
-    result = sm.first_start(_settings_path())
+    result = sm.first_start(_storage_path())
     assert result is True
     assert len(sm.groups) > 0
     assert len(sm.ranges) > 0
@@ -247,7 +251,7 @@ def test_valid_result_storage_manager_first_start_resets_flag():
     sm = storage_manager()
     smg = settings_manager()
     smg.settings.first_launch_flag = True
-    sm.first_start(_settings_path())
+    sm.first_start(_storage_path())
     assert smg.settings.first_launch_flag is False
 
 
@@ -263,9 +267,9 @@ def test_valid_result_storage_manager_first_start_second_time_no_op():
     sm = storage_manager()
     smg = settings_manager()
     smg.settings.first_launch_flag = True
-    sm.first_start(_settings_path())
+    sm.first_start(_storage_path())
     before = len(sm.groups)
 
-    result = sm.first_start(_settings_path())
+    result = sm.first_start(_storage_path())
     assert result is False
     assert len(sm.groups) == before

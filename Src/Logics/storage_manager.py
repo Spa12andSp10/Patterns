@@ -1,18 +1,23 @@
+import json
+
 from Src.Core.abstract_manager import abstract_manager
+from Src.Core.exception import arguments_exeption
+from Src.Logics.settings_manager import settings_manager
 from Src.Models.group_model import group_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
 from Src.Models.warehouse_model import warehouse_model
-from Src.Logics.settings_manager import settings_manager
-from Src.Core.exception import arguments_exeption
 
 
 class storage_manager(abstract_manager):
     """Singleton-хранилище доменных справочников.
 
     Хранит группы номенклатуры, единицы измерения, номенклатуру
-    и склады. Данные загружаются из JSON через settings_manager.
+    и склады. Эталонные данные формируются при первом старте
+    из файла storage_data.json.
     """
+
+    __default_data_file = "storage_data.json"
 
     _groups: list = []
     _nomenclature: list = []
@@ -39,25 +44,42 @@ class storage_manager(abstract_manager):
             cls.instance = super(storage_manager, cls).__new__(cls)
         return cls.instance
 
+    @staticmethod
+    def _read_json(file_name: str) -> dict:
+        """Читает JSON-файл и возвращает словарь.
+
+        :param file_name: Путь к файлу.
+        :return: Содержимое файла как словарь.
+        :raises FileNotFoundError: Если файл не найден.
+        :raises json.JSONDecodeError: Если JSON некорректен.
+        """
+        with open(file_name, "r", encoding="utf-8") as file:
+            return json.load(file)
+
     def load(self, file_name: str = "") -> None:
-        """Загружает справочники из JSON-файла.
+        """Загружает справочники из эталонного JSON-файла.
 
         Если настройки ещё не загружены — сначала загружает их
         через settings_manager.
 
-        :param file_name: Путь к файлу настроек.
+        :param file_name: Путь к файлу эталонных данных.
+            Если пусто — используется storage_data.json.
         """
         manager = settings_manager()
-        if not manager._is_loaded:
-            manager.load(file_name)
-        self._data = manager.data
+        if not manager.is_loaded:
+            manager.load()
+
+        inner_file_name = file_name if file_name != "" else self.__default_data_file
+        try:
+            self._data = self._read_json(inner_file_name)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self._is_loaded = False
+            return
+
         self._is_loaded = self.convert()
 
     def _convert_ranges(self, data: list) -> None:
         """Преобразует список единиц измерения из JSON.
-
-        Создаёт все range_model, затем связывает производные
-        единицы с базовыми через поле base.
 
         :param data: Список словарей с описанием единиц измерения.
         """
@@ -111,9 +133,6 @@ class storage_manager(abstract_manager):
     def _convert_nomenclature(self, data: list) -> None:
         """Преобразует список номенклатуры из JSON.
 
-        Для каждой записи ищет связанную группу и единицу измерения.
-        Если связь не найдена — бросает arguments_exeption.
-
         :param data: Список словарей с описанием номенклатуры.
         :raises arguments_exeption: Если группа или единица не найдены.
         """
@@ -147,9 +166,6 @@ class storage_manager(abstract_manager):
     def convert(self) -> bool:
         """Преобразует «сырые» данные JSON в доменные модели.
 
-        Обнуляет списки и последовательно вызывает конвертеры
-        для диапазонов, групп, номенклатуры и складов.
-
         :return: True, если преобразование прошло успешно.
         """
         self._groups = []
@@ -167,24 +183,30 @@ class storage_manager(abstract_manager):
     def first_start(self, file_name: str = "") -> bool:
         """Формирует первичные данные при первом старте.
 
-        Если флаг first_launch_flag установлен — загружает данные
-        и сбрасывает флаг. Иначе ничего не делает.
+        Если флаг first_launch_flag установлен — загружает эталонные
+        данные и сбрасывает флаг. Иначе ничего не делает.
 
-        :param file_name: Путь к файлу настроек.
+        :param file_name: Путь к файлу эталонных данных.
         :return: True, если данные были сформированы, иначе False.
         """
         manager = settings_manager()
-        if not manager._is_loaded:
-            manager.load(file_name)
+        if not manager.is_loaded:
+            manager.load()
 
         if not manager.settings.first_launch_flag:
             return False
 
-        self._data = manager.data
-        self._is_loaded = self.convert()
+        inner_file_name = file_name if file_name != "" else self.__default_data_file
+        try:
+            self._data = self._read_json(inner_file_name)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self._is_loaded = False
+            return False
 
+        self._is_loaded = self.convert()
         manager.settings.first_launch_flag = False
         return self._is_loaded
+
 
     @property
     def groups(self) -> list:

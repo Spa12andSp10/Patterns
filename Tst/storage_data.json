@@ -1,0 +1,28 @@
+{
+    "groups": [
+        {"name": "Dairy products"},
+        {"name": "Meat products"},
+        {"name": "Grocery"},
+        {"name": "Vegetables, fruit"}
+    ],
+    "ranges": [
+        {"name": "gram", "conversion_factor": 1, "base": null},
+        {"name": "kilogram", "conversion_factor": 1000, "base": "gram"},
+        {"name": "milliliter", "conversion_factor": 1, "base": null},
+        {"name": "liter", "conversion_factor": 1000, "base": "milliliter"}
+    ],
+    "nomenclature": [
+        {"name": "Milk", "full_name": "Pasteurized milk 3.2%",
+         "group": "Dairy products", "range": "liter"},
+        {"name": "Apple", "full_name": "Astrakhan apple",
+         "group": "Vegetables, fruit", "range": "kilogram"},
+        {"name": "Pasta", "full_name": "Durum wheat pasta",
+         "group": "Grocery", "range": "gram"},
+        {"name": "Beef", "full_name": "Beef (top grade)",
+         "group": "Meat products", "range": "kilogram"}
+    ],
+    "warehouse": [
+        {"name": "Main warehouse", "address": "29 Lermontova St."},
+        {"name": "Auxiliary warehouse", "address": "52 Krasnoarmeyskaya St."}
+    ]
+}

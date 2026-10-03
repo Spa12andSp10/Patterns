@@ -50,7 +50,7 @@ classDiagram
     class group_model {
         +name: str
     }
-
+поему 
     class range_model {
         -__base: range_model
         -__conversion_factor: float

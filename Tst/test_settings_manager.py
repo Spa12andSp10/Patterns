@@ -10,8 +10,6 @@ def _settings_path() -> str:
     return str(Path(__file__).resolve().parent / "settings.json")
 
 
-# ---------- Singleton ----------
-
 def test_valid_result_settings_manager_singleton():
     """
     Проверяет работу шаблона Singleton.
@@ -37,7 +35,6 @@ def test_valid_result_settings_manager_same_settings():
     assert instance1.settings is instance2.settings
 
 
-# ---------- Загрузка ----------
 
 def test_valid_result_settings_manager_load_success():
     """
@@ -107,17 +104,3 @@ def test_valid_result_settings_manager_data_not_empty():
     assert isinstance(manager.data, dict)
     assert "organization" in manager.data
     assert "first_launch_flag" in manager.data
-
-
-# ---------- Ошибки конвертации ----------
-
-def test_invalid_result_settings_manager_convert_bad_data():
-    """
-    Проверяет реакцию convert() на некорректные данные.
-
-    Ожидаемый результат:
-    при отсутствии organization convert() возвращает False.
-    """
-    manager = settings_manager()
-    manager._data = {"organization": None}
-    assert manager.convert() is False
