@@ -1,0 +1,12 @@
+{
+    "organization": {
+        "name": "Romashka LLC",
+        "inn": "7707083893",
+        "bic": "044525225",
+        "account": "40702810900000000000",
+        "owner": "Romashka"
+    },
+    "boss_name": "Ivanov I. I.",
+    "account_name": "Semyonov. A. G.",
+    "first_launch_flag": true
+}
