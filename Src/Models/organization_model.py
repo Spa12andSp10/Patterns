@@ -3,8 +3,9 @@ from Src.Core.exception import (
     arguments_exeption,
     max_length_exeption,
     length_exeption,
-    validation_exeptoion,
+    validation_exeption,
 )
+from Src.Core.validator import validator
 
 
 class organization_model(entity_model):
@@ -40,45 +41,6 @@ class organization_model(entity_model):
         self.account = account
         self.owner = owner
 
-    def __check_inn(self, value: str) -> bool:
-        """Проверяет контрольную сумму ИНН.
-
-        :param value: Строка ИНН длиной 10 символов.
-        :return: True, если контрольная сумма корректна, иначе False.
-        """
-        total = (2 * int(value[0]) + 4 * int(value[1]) + 10 * int(value[2]) +
-                 3 * int(value[3]) + 5 * int(value[4]) + 9 * int(value[5]) +
-                 4 * int(value[6]) + 6 * int(value[7]) + 8 * int(value[8]))
-        result = total % 11
-        if result > 9:
-            result %= 10
-        return result == int(value[-1])
-
-    def __check_account(self, value: str) -> bool:
-        """Проверяет контрольную сумму расчётного счёта.
-
-        Использует последние три цифры БИК текущей организации.
-
-        :param value: Строка расчётного счёта длиной 20 символов.
-        :return: True, если контрольная сумма корректна, иначе False.
-        """
-        last = self.bic[-3:]
-        new_value = last + value
-        cnt = 1
-        total = 0
-        for i in range(23):
-            match cnt:
-                case 1:
-                    total += 7 * int(new_value[i])
-                    cnt += 1
-                case 2:
-                    total += 1 * int(new_value[i])
-                    cnt += 1
-                case 3:
-                    total += 3 * int(new_value[i])
-                    cnt = 1
-        return total % 10 == 0
-
     @property
     def inn(self) -> str:
         """Возвращает ИНН организации."""
@@ -94,14 +56,9 @@ class organization_model(entity_model):
         :raises validation_exeptoion: Если значение содержит нецифры
             или контрольная сумма некорректна.
         """
-        if value is None or not isinstance(value, str):
-            raise arguments_exeption("inn", "Некорректно переданный аргумент!")
-        if len(value.strip()) != self.__len_inn:
-            raise length_exeption("inn", self.__len_inn, "ИНН")
-        if value.isdigit() == False:
-            raise validation_exeptoion("inn", "ИНН должен состоять только из цифр!")
-        if self.__check_inn(value) == False:
-            raise validation_exeptoion("inn", "Некорректный ИНН!")
+        validator.validate(value, str, "inn", self.__len_inn)
+        validator.digit_validate(value, "inn")
+        validator.check_inn(value)
         self.__inn = value
 
     @property
@@ -118,12 +75,8 @@ class organization_model(entity_model):
         :raises length_exeption: Если длина не равна 9.
         :raises validation_exeptoion: Если значение содержит нецифры.
         """
-        if value is None or not isinstance(value, str):
-            raise arguments_exeption("bic", "Некорректно переданный аргумент!")
-        if len(value.strip()) != self.__len_bic:
-            raise length_exeption("bic", self.__len_bic, "БИК")
-        if value.isdigit() == False:
-            raise validation_exeptoion("bic", "БИК должен состоять только из цифр!")
+        validator.validate(value, str, "bic", self.__len_bic)
+        validator.digit_validate(value, "bic")
         self.__bic = value
 
     @property
@@ -141,14 +94,9 @@ class organization_model(entity_model):
         :raises validation_exeptoion: Если значение содержит нецифры
             или контрольная сумма некорректна.
         """
-        if value is None or not isinstance(value, str):
-            raise arguments_exeption("account", "Некорректно переданный аргумент!")
-        if len(value.strip()) != self.__len_account:
-            raise length_exeption("account", self.__len_account, "Счет")
-        if value.isdigit() == False:
-            raise validation_exeptoion("account", "Счет должен состоять только из цифр!")
-        if self.__check_account(value) == False:
-            raise validation_exeptoion("account", "Некорректный Счет!")
+        validator.validate(value, str, "account", self.__len_account)
+        validator.digit_validate(value, "account")
+        validator.check_account(value, self.__bic)
         self.__account = value
 
     @property
@@ -164,8 +112,5 @@ class organization_model(entity_model):
         :raises arguments_exeption: Если значение не строка или None.
         :raises max_length_exeption: Если длина превышает 50 символов.
         """
-        if value is None or not isinstance(value, str):
-            raise arguments_exeption("owner", "Некорректно переданный аргумент!")
-        if len(value.strip()) > self.__max_len_owner:
-            raise max_length_exeption("owner", self.__max_len_owner)
+        validator.validate(value, str, "owner", max_len=self.__max_len_owner)
         self.__owner = value

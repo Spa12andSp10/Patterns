@@ -2,6 +2,7 @@ from Src.Core.entity_model import entity_model
 from Src.Models.group_model import group_model
 from Src.Models.range_model import range_model
 from Src.Core.exception import arguments_exeption, max_length_exeption
+from Src.Core.validator import validator
 
 
 class nomenclature_model(entity_model):
@@ -46,10 +47,7 @@ class nomenclature_model(entity_model):
         :raises arguments_exeption: Если значение не строка или None.
         :raises max_length_exeption: Если длина превышает максимально допустимую.
         """
-        if value is None or not isinstance(value, str):
-            raise arguments_exeption("full_name", "Некорректно переданный аргумент!")
-        if len(value.strip()) > self.__full_name_max_lenght:
-            raise max_length_exeption("full_name", self.__full_name_max_lenght)
+        validator.validate(value, str, self.__full_name_max_lenght)
         self.__full_name = value
 
     @property
@@ -64,8 +62,7 @@ class nomenclature_model(entity_model):
         :param value: Группа номенклатуры или None.
         :raises arguments_exeption: Если значение не group_model и не None.
         """
-        if value is not None and not isinstance(value, group_model):
-            raise arguments_exeption("group", "Некорректно переданный аргумент!")
+        validator.validate(value, group_model, "group")
         self.__group = value
 
     @property
@@ -80,6 +77,5 @@ class nomenclature_model(entity_model):
         :param value: Единица измерения или None.
         :raises arguments_exeption: Если значение не range_model и не None.
         """
-        if value is not None and not isinstance(value, range_model):
-            raise arguments_exeption("range", "Некорректно переданный аргумент!")
+        validator.validate(value, range_model, "range")
         self.__range = value

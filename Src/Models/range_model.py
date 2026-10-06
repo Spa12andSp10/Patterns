@@ -1,5 +1,6 @@
 from Src.Core.entity_model import entity_model
 from Src.Core.exception import arguments_exeption
+from Src.Core.validator import validator
 
 
 class range_model(entity_model):
@@ -30,16 +31,11 @@ class range_model(entity_model):
         return self.__base
 
     @base.setter
-    def base(self, value: "range_model") -> None:
-        """Устанавливает базовую единицу измерения.
-
-        :param value: Базовая единица измерения или None.
-        :raises arguments_exeption: Если значение не range_model и не None.
-        """
+    def base(self, value) -> None:
         if value is not None and not isinstance(value, range_model):
-            raise arguments_exeption("base", "Некорректно переданный аргумент!")
+            raise arguments_exeption("base", "Некорректно переданный аргумент")
         self.__base = value
-
+    
     @property
     def conversion_factor(self) -> float:
         """Возвращает коэффициент пересчёта относительно базовой единицы."""
@@ -52,8 +48,8 @@ class range_model(entity_model):
         :param value: Числовое значение коэффициента.
         :raises arguments_exeption: Если значение не число или меньше/равно нулю.
         """
-        if value is None or not isinstance(value, (int, float)):
-            raise arguments_exeption("conversion_factor", "Коэффициент должен быть числом!")
-        if value <= 0:
-            raise arguments_exeption("conversion_factor", "Коэффициент должен быть больше нуля!")
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise arguments_exeption("conversion_factor",
+                                 "Некорректно переданный аргумент")
+        validator.no_lower_that_zero_validate(value, "conversion_factor")
         self.__conversion_factor = float(value)
