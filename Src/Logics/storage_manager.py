@@ -2,19 +2,22 @@ import json
 
 from Src.Core.abstract_manager import abstract_manager
 from Src.Core.exception import arguments_exeption
+from Src.Logics.range_factory import range_factory
 from Src.Logics.settings_manager import settings_manager
+from Src.Logics.technicalmap_factory import technicalmap_factory
 from Src.Models.group_model import group_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
 from Src.Models.warehouse_model import warehouse_model
+from Src.Logics.ingredient_factory import ingredient_factory
 
 
 class storage_manager(abstract_manager):
     """Singleton-хранилище доменных справочников.
 
-    Хранит группы номенклатуры, единицы измерения, номенклатуру
-    и склады. Эталонные данные формируются при первом старте
-    из файла storage_data.json.
+    Хранит группы номенклатуры, единицы измерения, номенклатуру,
+    склады и технологические карты (рецепты). Эталонные данные
+    формируются при первом старте из файла storage_data.json.
     """
 
     __default_data_file = "storage_data.json"
@@ -23,6 +26,7 @@ class storage_manager(abstract_manager):
     _nomenclature: list = []
     _warehouse: list = []
     _ranges: list = []
+    _recipes: list = []
 
     def __init__(self):
         """Инициализирует пустые списки справочников (однократно)."""
@@ -32,6 +36,7 @@ class storage_manager(abstract_manager):
             self._nomenclature = []
             self._warehouse = []
             self._ranges = []
+            self._recipes = []
             self._is_loaded = False
             self._data = {}
 
@@ -163,6 +168,43 @@ class storage_manager(abstract_manager):
                 warehouse_model(name=item["name"], address=item["address"])
             )
 
+    def _convert_recipes(self, data: list) -> None:
+        """Преобразует список рецептов из JSON.
+
+        Каждый элемент — словарь с полями:
+          - name: наименование блюда;
+          - time: время приготовления;
+          - description: инструкция;
+          - ingredients: список ингредиентов;
+          - preparation_method: {наименование: способ}.
+
+        Структура аналогична _convert_warehouse: просто проходим
+        по списку и добавляем модели через фабрику.
+
+        :param data: Список словарей с описанием рецептов.
+        """
+        for item in data:
+            self._recipes.append(
+                technicalmap_factory.create(
+                    ingredients=[
+                        ingredient_factory.create(
+                            full_name=ing["full_name"],
+                            brutto=ing["brutto"],
+                            proteins=ing["proteins"],
+                            fats=ing["fats"],
+                            carbohydrates=ing["carbohydrates"],
+                            coef=ing.get("coef", 1.0),
+                            type=ing.get("type", "product"),
+                        )
+                        for ing in item.get("ingredients", [])
+                    ],
+                    preparation_method=item.get("preparation_method", {}),
+                    description=item["description"],
+                    time=item["time"],
+                    name=item["name"],
+                )
+            )
+
     def convert(self) -> bool:
         """Преобразует «сырые» данные JSON в доменные модели.
 
@@ -172,11 +214,13 @@ class storage_manager(abstract_manager):
         self._nomenclature = []
         self._warehouse = []
         self._ranges = []
+        self._recipes = []
 
         self._convert_ranges(self._data.get("ranges", []))
         self._convert_groups(self._data.get("groups", []))
         self._convert_nomenclature(self._data.get("nomenclature", []))
         self._convert_warehouse(self._data.get("warehouse", []))
+        self._convert_recipes(self._data.get("recipes", []))
 
         return True
 
@@ -184,7 +228,8 @@ class storage_manager(abstract_manager):
         """Формирует первичные данные при первом старте.
 
         Если флаг first_launch_flag установлен — загружает эталонные
-        данные и сбрасывает флаг. Иначе ничего не делает.
+        данные, дозаполняет рецепты через фабрику и сбрасывает флаг.
+        Иначе ничего не делает.
 
         :param file_name: Путь к файлу эталонных данных.
         :return: True, если данные были сформированы, иначе False.
@@ -200,10 +245,10 @@ class storage_manager(abstract_manager):
         try:
             self._data = self._read_json(inner_file_name)
         except (FileNotFoundError, json.JSONDecodeError):
-            self._is_loaded = False
-            return False
+            self._data = {}
 
         self._is_loaded = self.convert()
+
         manager.settings.first_launch_flag = False
         return self._is_loaded
 
@@ -227,6 +272,11 @@ class storage_manager(abstract_manager):
     def warehouses(self) -> list:
         """Возвращает список складов."""
         return self._warehouse
+
+    @property
+    def recipes(self) -> list:
+        """Возвращает список технологических карт (рецептов)."""
+        return self._recipes
 
     @staticmethod
     def _is_unique(items: list, candidate) -> bool:
@@ -256,11 +306,7 @@ class storage_manager(abstract_manager):
         return False
 
     def add_range(self, value: range_model) -> bool:
-        """Добавляет единицу измерения, если её ещё нет.
-
-        :param value: Добавляемая единица измерения.
-        :return: True, если единица добавлена, иначе False.
-        """
+        """Добавляет единицу измерения, если её ещё нет."""
         if self._is_unique(self._ranges, value):
             self._ranges.append(value)
             return True
@@ -287,3 +333,25 @@ class storage_manager(abstract_manager):
             self._warehouse.append(value)
             return True
         return False
+
+    def add_recipe(self, value) -> bool:
+        """Добавляет рецепт, если его ещё нет (по имени).
+
+        :param value: Добавляемая технологическая карта.
+        :return: True, если рецепт добавлен, иначе False.
+        """
+        if self._is_unique(self._recipes, value):
+            self._recipes.append(value)
+            return True
+        return False
+
+    def load_default_ranges(self) -> None:
+        """Наполняет справочник единиц эталонными значениями."""
+        gram = range_factory.create_gram()
+        self.add_range(gram)
+
+        kilogram = range_factory.create_kilogram(base=gram)
+        self.add_range(kilogram)
+
+        tonna = range_factory.create_tonna(base=kilogram)
+        self.add_range(tonna)

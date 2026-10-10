@@ -17,10 +17,12 @@ class nomenclature_model(entity_model):
     __full_name_max_lenght: int = 255
     __group: group_model = None
     __range: range_model = None
+    __type: str = ""
 
     def __init__(self, full_name: str = "", name: str = "",
                  group: group_model = None,
-                 range: range_model = None) -> None:
+                 range: range_model = None,
+                 type: str = "") -> None:
         """Инициализирует номенклатуру.
 
         :param full_name: Полное наименование номенклатуры.
@@ -57,25 +59,29 @@ class nomenclature_model(entity_model):
 
     @group.setter
     def group(self, value: group_model) -> None:
-        """Устанавливает группу номенклатуры.
-
-        :param value: Группа номенклатуры или None.
-        :raises arguments_exeption: Если значение не group_model и не None.
-        """
-        validator.validate(value, group_model, "group")
+        if value is not None and not isinstance(value, group_model):
+            raise arguments_exeption("group", "Некорректно переданный аргумент")
         self.__group = value
 
     @property
     def range(self) -> range_model:
         """Возвращает единицу измерения номенклатуры."""
         return self.__range
-
+    
     @range.setter
     def range(self, value: range_model) -> None:
-        """Устанавливает единицу измерения номенклатуры.
-
-        :param value: Единица измерения или None.
-        :raises arguments_exeption: Если значение не range_model и не None.
-        """
-        validator.validate(value, range_model, "range")
+        if value is not None and not isinstance(value, range_model):
+            raise arguments_exeption("range", "Некорректно переданный аргумент")
         self.__range = value
+
+    @property
+    def type(self) -> str:
+        return self.__type
+
+    @type.setter
+    def type(self, value: str):
+        validator.validate(value, str, "type")
+        self.__type = value
+
+
+
