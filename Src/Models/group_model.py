@@ -5,6 +5,7 @@ class group_model(entity_model):
     """Модель группы номенклатуры.
 
     Содержит определение: наименование.
+    Создаётся через classmethod-конструктор create.
     """
 
     def __init__(self, name: str = "") -> None:
@@ -14,3 +15,12 @@ class group_model(entity_model):
         """
         super().__init__()
         self.name = name
+
+    @classmethod
+    def create(cls, name: str) -> "group_model":
+        """Создаёт группу номенклатуры по наименованию.
+
+        :param name: Наименование группы.
+        :return: Созданная группа.
+        """
+        return cls(name=name)

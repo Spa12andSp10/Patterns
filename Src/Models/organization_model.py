@@ -1,10 +1,4 @@
 from Src.Core.entity_model import entity_model
-from Src.Core.exception import (
-    arguments_exeption,
-    max_length_exeption,
-    length_exeption,
-    validation_exeption,
-)
 from Src.Core.validator import validator
 
 
@@ -13,6 +7,7 @@ class organization_model(entity_model):
 
     Содержит определения: наименование, ИНН, БИК, счёт,
     форму собственности и их длины/ограничения.
+    Создаётся через classmethod-конструктор create.
     """
 
     __inn: str = ""
@@ -41,6 +36,21 @@ class organization_model(entity_model):
         self.account = account
         self.owner = owner
 
+    @classmethod
+    def create(cls, name: str, inn: str, bic: str,
+               account: str, owner: str) -> "organization_model":
+        """Создаёт организацию по параметрам.
+
+        :param name: Наименование организации.
+        :param inn: ИНН.
+        :param bic: БИК.
+        :param account: Расчётный счёт.
+        :param owner: Форма собственности.
+        :return: Созданная организация.
+        """
+        return cls(name=name, inn=inn, bic=bic,
+                   account=account, owner=owner)
+
     @property
     def inn(self) -> str:
         """Возвращает ИНН организации."""
@@ -53,7 +63,7 @@ class organization_model(entity_model):
         :param value: Строка ИНН длиной 10 символов.
         :raises arguments_exeption: Если значение не строка или None.
         :raises length_exeption: Если длина не равна 10.
-        :raises validation_exeptoion: Если значение содержит нецифры
+        :raises validation_exeption: Если значение содержит нецифры
             или контрольная сумма некорректна.
         """
         validator.validate(value, str, "inn", self.__len_inn)
@@ -73,7 +83,7 @@ class organization_model(entity_model):
         :param value: Строка БИК длиной 9 символов.
         :raises arguments_exeption: Если значение не строка или None.
         :raises length_exeption: Если длина не равна 9.
-        :raises validation_exeptoion: Если значение содержит нецифры.
+        :raises validation_exeption: Если значение содержит нецифры.
         """
         validator.validate(value, str, "bic", self.__len_bic)
         validator.digit_validate(value, "bic")
@@ -91,7 +101,7 @@ class organization_model(entity_model):
         :param value: Строка счёта длиной 20 символов.
         :raises arguments_exeption: Если значение не строка или None.
         :raises length_exeption: Если длина не равна 20.
-        :raises validation_exeptoion: Если значение содержит нецифры
+        :raises validation_exeption: Если значение содержит нецифры
             или контрольная сумма некорректна.
         """
         validator.validate(value, str, "account", self.__len_account)

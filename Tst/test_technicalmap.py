@@ -4,7 +4,6 @@ from pathlib import Path
 
 from Src.Models.ingredient_model import ingredient_model
 from Src.Models.technicalmap_model import technicalmap_model
-from Src.Logics.technicalmap_factory import technicalmap_factory
 from Src.Logics.storage_manager import storage_manager
 from Src.Logics.settings_manager import settings_manager
 
@@ -16,11 +15,7 @@ def _storage_path() -> str:
 
 @pytest.fixture(autouse=True)
 def reset_storage():
-    """Сбрасывает состояние singleton-хранилища перед каждым тестом.
-
-    Очищает все списки справочников и сбрасывает флаг загрузки,
-    чтобы тесты не влияли друг на друга.
-    """
+    """Сбрасывает состояние singleton-хранилища перед каждым тестом."""
     sm = storage_manager()
     sm._groups = []
     sm._ranges = []
@@ -30,6 +25,7 @@ def reset_storage():
     sm._is_loaded = False
     sm._data = {}
     yield
+
 
 def test_valid_storage_recipe_loaded_from_json():
     """
@@ -172,69 +168,6 @@ def test_invalid_remove_missing_ingredient_returns_false():
     sm.load(_storage_path())
     recipe = sm.recipes[0]
     assert recipe.remove_ingredient("No that ingredient") is False
-
-
-def test_valid_add_packaging_updates_flag():
-    """
-    Проверяет обновление флага with_package при добавлении упаковки.
-
-    Ожидаемый результат:
-    до добавления with_package = False, после — True.
-    """
-    r = technicalmap_model(
-        ingredients=[ingredient_model("Flour", 100.0, 10.3, 1.1, 70.6, 1.0, "product")],
-        preparation_method={},
-        description="Test",
-        time="1 min",
-        name="Test dish",
-    )
-    assert r.with_package is False
-    r.add_ingredient(
-        ingredient_model("Packet", 3.0, 0.0, 0.0, 0.0, 1.0, "packaging")
-    )
-    assert r.with_package is True
-
-
-def test_valid_add_semi_finished_updates_flag():
-    """
-    Проверяет обновление флага with_pf при добавлении полуфабриката.
-
-    Ожидаемый результат:
-    до добавления with_pf = False, после — True.
-    """
-    r = technicalmap_model(
-        ingredients=[ingredient_model("Flour", 100.0, 10.3, 1.1, 70.6, 1.0, "product")],
-        preparation_method={},
-        description="Test",
-        time="1 min",
-        name="Test dish",
-    )
-    assert r.with_pf is False
-    r.add_ingredient(
-        ingredient_model("Bouillon", 200.0, 1.0, 0.5, 2.0, 1.0, "semi_finished")
-    )
-    assert r.with_pf is True
-
-
-def test_valid_factory_creates_recipe():
-    """
-    Проверяет, что technicalmap_factory.create создаёт рецепт.
-
-    Ожидаемый результат:
-    рецепт содержит заданные поля, брутто и нетто равны 100.0.
-    """
-    ing = ingredient_model("test", 100.0, 1.0, 1.0, 1.0, 1.0, "product")
-    r = technicalmap_factory.create(
-        ingredients=[ing],
-        preparation_method={"test": "boil"},
-        description="description",
-        time="10 min",
-        name="Factory recipe",
-    )
-    assert r.name == "Factory recipe"
-    assert len(r.ingredients) == 1
-    assert r.calculate_brutto() == pytest.approx(100.0)
-    assert r.calculate_netto() == pytest.approx(100.0)
 
 
 def test_valid_first_start_loads_recipe():

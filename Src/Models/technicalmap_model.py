@@ -1,34 +1,41 @@
 from Src.Core.entity_model import entity_model
 from Src.Models.ingredient_model import ingredient_model
 from Src.Core.validator import validator
-from Src.Core.cooking_coefs import resolve_cooking_coef, DEFAULT_COOKING_COEF
+from Src.Core.cooking_coefs import resolve_cooking_coef
 from Src.Core.exception import arguments_exeption
+from Src.Core.ingredient_types import ingredient_type
+from Src.Core.nutrition_component import nutrition_component
 
 
-class technicalmap_model(entity_model):
+class technicalmap_model(entity_model, nutrition_component):
     """Модель технологической карты блюда.
 
-    Содержит список ингредиентов, способ приготовления каждого
-    ингредиента в виде словаря {наименование: способ}, текстовое
-    описание (инструкцию для повара) и время приготовления.
-    Позволяет рассчитать массу брутто/нетто и суммарные БЖУ
-    с учётом тепловой обработки.
+    Содержит список компонентов (ингредиентов и/или вложенных
+    технологических карт — «блюдо в блюде»), способ приготовления
+    каждого ингредиента в виде словаря {наименование: способ},
+    текстовое описание (инструкцию для повара) и время приготовления.
+
+    Реализует интерфейс nutrition_component: рекурсивно обходит
+    состав, поддерживает вложенные блюда и защищается от циклов
+    через множество visited (по unique_code).
+
+    Создаётся через classmethod-конструктор create.
     """
 
-    __ingredients: list[ingredient_model]
-    __preparation_method: dict[str, str]
+    __ingredients: list
+    __preparation_method: dict
     __description: str
     __time: str
     __with_package: bool = False
     __with_pf: bool = False
-    
 
-    def __init__(self, ingredients: list, preparation_method: dict[str, str],
+    def __init__(self, ingredients: list, preparation_method: dict,
                  description: str, time: str, name: str = ""):
         """Инициализирует технологическую карту.
 
-        :param ingredients: Список ингредиентов блюда.
-        :param preparation_method: Словарь {наименование ингредиента: способ приготовления}.
+        :param ingredients: Список компонентов (ingredient_model
+            или вложенные technicalmap_model).
+        :param preparation_method: Словарь {наименование ингредиента: способ}.
         :param description: Текстовая инструкция для повара.
         :param time: Время приготовления.
         :param name: Краткое наименование блюда.
@@ -42,35 +49,81 @@ class technicalmap_model(entity_model):
         self.time = time
         self.refresh_flags()
 
+    @classmethod
+    def create(cls, ingredients: list, preparation_method: dict,
+               description: str, time: str,
+               name: str = "") -> "technicalmap_model":
+        """Создаёт технологическую карту по составу и параметрам.
+
+        :param ingredients: Список компонентов (ингредиенты и/или
+            вложенные технологические карты).
+        :param preparation_method: Словарь {наименование: способ}.
+        :param description: Текстовая инструкция.
+        :param time: Время приготовления.
+        :param name: Краткое наименование блюда.
+        :return: Созданная технологическая карта.
+        """
+        return cls(
+            ingredients=ingredients,
+            preparation_method=preparation_method,
+            description=description,
+            time=time,
+            name=name,
+        )
+
     @property
-    def ingredients(self) -> list[ingredient_model]:
-        """Возвращает список ингредиентов блюда."""
+    def full_name(self) -> str:
+        """Возвращает полное наименование блюда.
+
+        У технологической карты отдельного полного наименования нет —
+        возвращаем краткое name, чтобы удовлетворить контракт
+        nutrition_component.
+
+        :return: Наименование блюда.
+        """
+        return self.name
+
+    @property
+    def ingredients(self) -> list:
+        """Возвращает список компонентов блюда."""
         return self.__ingredients
 
     @ingredients.setter
-    def ingredients(self, value: list[ingredient_model]) -> None:
-        """Устанавливает список ингредиентов блюда.
+    def ingredients(self, value: list) -> None:
+        """Устанавливает список компонентов блюда.
 
-        :param value: Список ингредиентов.
+        Каждый компонент должен реализовывать nutrition_component —
+        это либо ingredient_model, либо technicalmap_model.
+
+        :param value: Список компонентов.
         :raises arguments_exeption: Если значение не список.
-        :raises arguments_exeption: Если элемент списка не ingredient_model.
+        :raises arguments_exeption: Если элемент не nutrition_component.
         """
         if not isinstance(value, list):
             raise arguments_exeption("ingredients", "Должен быть списком")
         for item in value:
-            validator.validate(item, ingredient_model, "ingredients[]")
+            if not isinstance(item, nutrition_component):
+                raise arguments_exeption(
+                    "ingredients[]",
+                    "Компонент должен реализовывать nutrition_component"
+                )
         self.__ingredients = value
+        self.refresh_flags()
 
     @property
-    def preparation_method(self) -> dict[str, str]:
+    def preparation_method(self) -> dict:
         """Возвращает словарь способов приготовления ингредиентов."""
         return self.__preparation_method
 
     @preparation_method.setter
-    def preparation_method(self, value: dict[str, str]) -> None:
-        """Устанавливает словарь способов приготовления ингредиентов.
+    def preparation_method(self, value: dict) -> None:
+        """Устанавливает словарь способов приготовления.
 
-        :param value: Словарь {наименование ингредиента: способ приготовления}.
+        Способы задаются только для непосредственных листовых
+        ингредиентов этой карты. Вложенные блюда знают свои способы
+        сами.
+
+        :param value: Словарь {наименование ингредиента: способ}.
         :raises arguments_exeption: Если значение не словарь.
         :raises arguments_exeption: Если ключ или значение не строка.
         """
@@ -113,97 +166,151 @@ class technicalmap_model(entity_model):
 
     @property
     def with_package(self) -> bool:
+        """Возвращает флаг наличия упаковки в составе."""
         return self.__with_package
 
     @with_package.setter
     def with_package(self, value: bool) -> None:
+        """Устанавливает флаг наличия упаковки.
+
+        :param value: Значение флага.
+        :raises arguments_exeption: Если значение не bool.
+        """
         validator.validate(value, bool, "with_package")
         self.__with_package = value
 
     @property
     def with_pf(self) -> bool:
+        """Возвращает флаг наличия полуфабрикатов в составе."""
         return self.__with_pf
 
     def refresh_flags(self) -> None:
-        """Пересчитывает флаги по составу ингредиентов.
+        """Пересчитывает флаги по составу компонентов.
 
-        Устанавливает with_package = True, если среди ингредиентов
-        есть упаковка (type == "packaging"), и with_pf = True, если
-        есть полуфабрикат (type == "semi_finished").
+        Устанавливает with_package = True, если среди компонентов
+        есть упаковка (item_type == ingredient_type.PACKAGING), и
+        with_pf = True, если есть полуфабрикат
+        (item_type == ingredient_type.SEMI_FINISHED).
         """
         self.__with_package = any(
-            getattr(i, "type", "") == "packaging" for i in self.__ingredients
+            isinstance(i, ingredient_model)
+            and i.item_type == ingredient_type.PACKAGING
+            for i in self.__ingredients
         )
         self.__with_pf = any(
-            getattr(i, "type", "") == "semi_finished" for i in self.__ingredients
+            isinstance(i, ingredient_model)
+            and i.item_type == ingredient_type.SEMI_FINISHED
+            for i in self.__ingredients
         )
 
-    def calculate_brutto(self) -> float:
-        """Рассчитывает суммарное брутто всех ингредиентов.
+    # --- Вспомогательные методы рекурсивного обхода ---
 
-        Упаковка учитывается, если флаг with_package установлен.
+    def _iter_components(self):
+        """Итератор по компонентам с фильтрацией упаковки.
 
-        :return: Суммарная масса брутто.
+        Упаковка как самостоятельный компонент пропускается, если
+        флаг with_package не установлен.
+
+        :return: Итератор по компонентам.
         """
-        total = 0.0
-        for ing in self.__ingredients:
-            ing_type = getattr(ing, "type", "")
-            if ing_type == "packaging" and not self.__with_package:
+        for item in self.__ingredients:
+            if (isinstance(item, ingredient_model)
+                    and item.item_type == ingredient_type.PACKAGING
+                    and not self.__with_package):
                 continue
-            total += ing.brutto
+            yield item
+
+    def _enter(self, visited: set) -> None:
+        """Проверяет и регистрирует вход в карту при обходе.
+
+        :param visited: Множество unique_code посещённых карт.
+        :raises arguments_exeption: При обнаружении циклической ссылки.
+        """
+        if self.unique_code in visited:
+            raise arguments_exeption(
+                "ingredients",
+                f"Циклическая ссылка в технологической карте '{self.name}'"
+            )
+        visited.add(self.unique_code)
+
+    def _resolve_method_for(self, item) -> str:
+        """Возвращает способ приготовления для компонента.
+
+        :param item: Компонент состава.
+        :return: Способ приготовления или пустая строка.
+        """
+        if isinstance(item, ingredient_model):
+            return self.__preparation_method.get(item.full_name, "")
+        return ""
+
+    def _calculate_nutrient(self, nutrient: str, visited: set = None) -> float:
+        """Общий рекурсивный расчёт нутриента по составу.
+
+        :param nutrient: 'proteins' | 'fats' | 'carbohydrates'.
+        :param visited: Множество unique_code посещённых карт.
+        :return: Суммарное значение нутриента.
+        """
+        if visited is None:
+            visited = set()
+        self._enter(visited)
+
+        total = 0.0
+        for item in self._iter_components():
+            if isinstance(item, ingredient_model):
+                if item.item_type == ingredient_type.PACKAGING:
+                    continue
+                method = self._resolve_method_for(item)
+                coef = resolve_cooking_coef(method)
+                base = getattr(item, nutrient)
+                total += base * coef[nutrient]
+            else:
+                total += getattr(item, f"calculate_{nutrient}")(visited)
+
+        visited.discard(self.unique_code)
         return total
 
-    def calculate_netto(self) -> float:
-        """Рассчитывает суммарное нетто всех ингредиентов.
+    # --- Реализация контракта nutrition_component ---
 
-        Упаковка не учитывается. Нетто каждого ингредиента —
-        это брутто * коэффициент пересчёта.
+    def calculate_brutto(self, visited: set = None) -> float:
+        """Рекурсивно считает брутто блюда, включая вложенные блюда."""
+        if visited is None:
+            visited = set()
+        self._enter(visited)
 
-        :return: Суммарная масса нетто.
-        """
         total = 0.0
-        for ing in self.__ingredients:
-            ing_type = getattr(ing, "type", "")
-            if ing_type == "packaging":
+        for item in self._iter_components():
+            total += item.calculate_brutto(visited)
+
+        visited.discard(self.unique_code)
+        return total
+
+    def calculate_netto(self, visited: set = None) -> float:
+        """Рекурсивно считает нетто блюда, включая вложенные блюда."""
+        if visited is None:
+            visited = set()
+        self._enter(visited)
+
+        total = 0.0
+        for item in self._iter_components():
+            if (isinstance(item, ingredient_model)
+                    and item.item_type == ingredient_type.PACKAGING):
                 continue
-            total += ing.brutto * ing.coef
+            total += item.calculate_netto(visited)
+
+        visited.discard(self.unique_code)
         return total
 
-    def calculate_proteins(self) -> float:
-        """Рассчитывает суммарные белки с учётом способа приготовления.
+    def calculate_proteins(self, visited: set = None) -> float:
+        """Рекурсивно считает белки блюда с учётом обработки."""
+        return self._calculate_nutrient("proteins", visited)
 
-        :return: Суммарное количество белков.
-        """
-        total = 0.0
-        for ing in self.__ingredients:
-            method = self.__preparation_method.get(ing.full_name, "")
-            coef = resolve_cooking_coef(method)
-            total += ing.proteins * coef["proteins"]
-        return total
+    def calculate_fats(self, visited: set = None) -> float:
+        """Рекурсивно считает жиры блюда с учётом обработки."""
+        return self._calculate_nutrient("fats", visited)
 
-    def calculate_fats(self) -> float:
-        """Рассчитывает суммарные жиры с учётом способа приготовления.
-
-        :return: Суммарное количество жиров.
-        """
-        total = 0.0
-        for ing in self.__ingredients:
-            method = self.__preparation_method.get(ing.full_name, "")
-            coef = resolve_cooking_coef(method)
-            total += ing.fats * coef["fats"]
-        return total
-
-    def calculate_carbohydrates(self) -> float:
-        """Рассчитывает суммарные углеводы с учётом способа приготовления.
-
-        :return: Суммарное количество углеводов.
-        """
-        total = 0.0
-        for ing in self.__ingredients:
-            method = self.__preparation_method.get(ing.full_name, "")
-            coef = resolve_cooking_coef(method)
-            total += ing.carbohydrates * coef["carbohydrates"]
-        return total
+    def calculate_carbohydrates(self, visited: set = None) -> float:
+        """Рекурсивно считает углеводы блюда с учётом обработки."""
+        return self._calculate_nutrient("carbohydrates", visited)
 
     def calculate_nutrition(self) -> dict:
         """Рассчитывает суммарные БЖУ и калорийность блюда.
@@ -221,23 +328,18 @@ class technicalmap_model(entity_model):
             "calories": round(proteins * 4 + fats * 9 + carbohydrates * 4, 2),
         }
 
-
-    def add_ingredient(self, ingredient: ingredient_model) -> None:
-        """Добавляет ингредиент и обновляет флаги.
-
-        :param ingredient: Добавляемый ингредиент.
-        :raises arguments_exeption: Если значение не ingredient_model.
-        """
-        validator.validate(ingredient, ingredient_model, "ingredient")
+    def add_ingredient(self, ingredient) -> None:
+        """Добавляет компонент и обновляет флаги."""
+        if not isinstance(ingredient, nutrition_component):
+            raise arguments_exeption(
+                "ingredient",
+                "Компонент должен реализовывать nutrition_component"
+            )
         self.__ingredients.append(ingredient)
         self.refresh_flags()
 
     def remove_ingredient(self, full_name: str) -> bool:
-        """Удаляет ингредиент по полному наименованию.
-
-        :param full_name: Полное наименование ингредиента.
-        :return: True, если что-то удалено, иначе False.
-        """
+        """Удаляет компонент по полному наименованию."""
         before = len(self.__ingredients)
         self.__ingredients = [
             i for i in self.__ingredients if i.full_name != full_name

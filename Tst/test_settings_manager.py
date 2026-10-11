@@ -72,7 +72,7 @@ def test_valid_result_settings_manager_organization_filled():
     manager.load(_settings_path())
     org = manager.settings.organization
     assert org is not None
-    assert org.name == "ООО Ромашка"
+    assert org.name == "Romashka LLC"
     assert org.inn == "7707083893"
     assert org.bic == "044525225"
 
@@ -87,8 +87,8 @@ def test_valid_result_settings_manager_boss_and_account_name():
     """
     manager = settings_manager()
     manager.load(_settings_path())
-    assert manager.settings.boss_name == "Иванов И. И"
-    assert manager.settings.account_name == "Семёнов А. Г."
+    assert manager.settings.boss_name == "Ivanov I. I."
+    assert manager.settings.account_name == "Semyonov. A. G."
 
 
 def test_valid_result_settings_manager_data_not_empty():
