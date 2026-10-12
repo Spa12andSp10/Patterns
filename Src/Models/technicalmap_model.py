@@ -203,8 +203,6 @@ class technicalmap_model(entity_model, nutrition_component):
             for i in self.__ingredients
         )
 
-    # --- Вспомогательные методы рекурсивного обхода ---
-
     def _iter_components(self):
         """Итератор по компонентам с фильтрацией упаковки.
 
@@ -243,36 +241,14 @@ class technicalmap_model(entity_model, nutrition_component):
             return self.__preparation_method.get(item.full_name, "")
         return ""
 
-    def _calculate_nutrient(self, nutrient: str, visited: set = None) -> float:
-        """Общий рекурсивный расчёт нутриента по составу.
-
-        :param nutrient: 'proteins' | 'fats' | 'carbohydrates'.
-        :param visited: Множество unique_code посещённых карт.
-        :return: Суммарное значение нутриента.
-        """
-        if visited is None:
-            visited = set()
-        self._enter(visited)
-
-        total = 0.0
-        for item in self._iter_components():
-            if isinstance(item, ingredient_model):
-                if item.item_type == ingredient_type.PACKAGING:
-                    continue
-                method = self._resolve_method_for(item)
-                coef = resolve_cooking_coef(method)
-                base = getattr(item, nutrient)
-                total += base * coef[nutrient]
-            else:
-                total += getattr(item, f"calculate_{nutrient}")(visited)
-
-        visited.discard(self.unique_code)
-        return total
-
     # --- Реализация контракта nutrition_component ---
 
     def calculate_brutto(self, visited: set = None) -> float:
-        """Рекурсивно считает брутто блюда, включая вложенные блюда."""
+        """Рекурсивно считает брутто блюда, включая вложенные блюда.
+
+        :param visited: Множество unique_code посещённых карт.
+        :return: Суммарное брутто.
+        """
         if visited is None:
             visited = set()
         self._enter(visited)
@@ -285,7 +261,11 @@ class technicalmap_model(entity_model, nutrition_component):
         return total
 
     def calculate_netto(self, visited: set = None) -> float:
-        """Рекурсивно считает нетто блюда, включая вложенные блюда."""
+        """Рекурсивно считает нетто блюда, включая вложенные блюда.
+
+        :param visited: Множество unique_code посещённых карт.
+        :return: Суммарное нетто.
+        """
         if visited is None:
             visited = set()
         self._enter(visited)
@@ -300,26 +280,54 @@ class technicalmap_model(entity_model, nutrition_component):
         visited.discard(self.unique_code)
         return total
 
-    def calculate_proteins(self, visited: set = None) -> float:
-        """Рекурсивно считает белки блюда с учётом обработки."""
-        return self._calculate_nutrient("proteins", visited)
+    def calculate_nutrient(self, nutrient: str, visited: set = None) -> float:
+        """Рекурсивно считает суммарное значение нутриента по составу.
 
-    def calculate_fats(self, visited: set = None) -> float:
-        """Рекурсивно считает жиры блюда с учётом обработки."""
-        return self._calculate_nutrient("fats", visited)
+        Единая точка входа для рекурсивного обхода. Для листовых
+        ингредиентов учитывает способ приготовления через
+        resolve_cooking_coef, для вложенных карт — делегирует
+        рекурсивный вызов.
 
-    def calculate_carbohydrates(self, visited: set = None) -> float:
-        """Рекурсивно считает углеводы блюда с учётом обработки."""
-        return self._calculate_nutrient("carbohydrates", visited)
+        :param nutrient: 'proteins' | 'fats' | 'carbohydrates'.
+        :param visited: Множество unique_code посещённых карт.
+        :return: Суммарное значение нутриента.
+        :raises arguments_exeption: При неизвестном имени нутриента.
+        :raises arguments_exeption: При обнаружении циклической ссылки.
+        """
+        if nutrient not in self.NUTRIENTS:
+            raise arguments_exeption(
+                "nutrient",
+                f"Неизвестный нутриент: {nutrient!r}. "
+                f"Ожидается один из {self.NUTRIENTS}"
+            )
+
+        if visited is None:
+            visited = set()
+        self._enter(visited)
+
+        total = 0.0
+        for item in self._iter_components():
+            if isinstance(item, ingredient_model):
+                if item.item_type == ingredient_type.PACKAGING:
+                    continue
+                method = self._resolve_method_for(item)
+                coef = resolve_cooking_coef(method)
+                base = item.calculate_nutrient(nutrient)
+                total += base * coef[nutrient]
+            else:
+                total += item.calculate_nutrient(nutrient, visited)
+
+        visited.discard(self.unique_code)
+        return total
 
     def calculate_nutrition(self) -> dict:
         """Рассчитывает суммарные БЖУ и калорийность блюда.
 
         :return: Словарь с ключами proteins/fats/carbohydrates/calories.
         """
-        proteins = self.calculate_proteins()
-        fats = self.calculate_fats()
-        carbohydrates = self.calculate_carbohydrates()
+        proteins = self.calculate_nutrient("proteins")
+        fats = self.calculate_nutrient("fats")
+        carbohydrates = self.calculate_nutrient("carbohydrates")
 
         return {
             "proteins": round(proteins, 2),
@@ -329,7 +337,11 @@ class technicalmap_model(entity_model, nutrition_component):
         }
 
     def add_ingredient(self, ingredient) -> None:
-        """Добавляет компонент и обновляет флаги."""
+        """Добавляет компонент и обновляет флаги.
+
+        :param ingredient: Компонент состава.
+        :raises arguments_exeption: Если элемент не nutrition_component.
+        """
         if not isinstance(ingredient, nutrition_component):
             raise arguments_exeption(
                 "ingredient",
@@ -339,7 +351,11 @@ class technicalmap_model(entity_model, nutrition_component):
         self.refresh_flags()
 
     def remove_ingredient(self, full_name: str) -> bool:
-        """Удаляет компонент по полному наименованию."""
+        """Удаляет компонент по полному наименованию.
+
+        :param full_name: Полное наименование компонента.
+        :return: True, если компонент был удалён.
+        """
         before = len(self.__ingredients)
         self.__ingredients = [
             i for i in self.__ingredients if i.full_name != full_name

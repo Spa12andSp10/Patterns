@@ -13,6 +13,9 @@ class nutrition_component(ABC):
     защищает от циклических ссылок при рекурсивном обходе.
     """
 
+    # Допустимые имена нутриентов — единый источник истины
+    NUTRIENTS = ("proteins", "fats", "carbohydrates")
+
     @property
     @abstractmethod
     def name(self) -> str:
@@ -50,28 +53,28 @@ class nutrition_component(ABC):
         ...
 
     @abstractmethod
+    def calculate_nutrient(self, nutrient: str, visited: set = None) -> float:
+        """Считает суммарное значение указанного нутриента.
+
+        Единая точка входа для рекурсивного обхода состава:
+        и ингредиент, и вложенная технологическая карта умеют
+        отвечать на вопрос «сколько у тебя <nutrient>».
+
+        :param nutrient: 'proteins' | 'fats' | 'carbohydrates'.
+        :param visited: Множество unique_code посещённых карт.
+        :return: Суммарное значение нутриента.
+        :raises arguments_exeption: При неизвестном имени нутриента.
+        """
+        ...
+
     def calculate_proteins(self, visited: set = None) -> float:
-        """Считает суммарные белки компонента.
+        """Удобная обёртка: суммарные белки компонента."""
+        return self.calculate_nutrient("proteins", visited)
 
-        :param visited: Множество unique_code посещённых карт.
-        :return: Суммарное количество белков.
-        """
-        ...
-
-    @abstractmethod
     def calculate_fats(self, visited: set = None) -> float:
-        """Считает суммарные жиры компонента.
+        """Удобная обёртка: суммарные жиры компонента."""
+        return self.calculate_nutrient("fats", visited)
 
-        :param visited: Множество unique_code посещённых карт.
-        :return: Суммарное количество жиров.
-        """
-        ...
-
-    @abstractmethod
     def calculate_carbohydrates(self, visited: set = None) -> float:
-        """Считает суммарные углеводы компонента.
-
-        :param visited: Множество unique_code посещённых карт.
-        :return: Суммарное количество углеводов.
-        """
-        ...
+        """Удобная обёртка: суммарные углеводы компонента."""
+        return self.calculate_nutrient("carbohydrates", visited)

@@ -2,6 +2,7 @@ from Src.Models.nomenclature_model import nomenclature_model
 from Src.Core.validator import validator
 from Src.Core.nutrition_component import nutrition_component
 from Src.Core.ingredient_types import ingredient_type
+from Src.Core.exception import arguments_exeption
 
 
 class ingredient_model(nomenclature_model, nutrition_component):
@@ -190,12 +191,11 @@ class ingredient_model(nomenclature_model, nutrition_component):
         validator.validate(value, (int, float), "coef")
         self.__coef = float(value)
 
-    # --- Реализация контракта nutrition_component ---
 
     def calculate_brutto(self, visited: set = None) -> float:
         """Возвращает брутто листового ингредиента.
 
-        :param visited: Не используется.
+        :param visited: Не используется (для совместимости с контрактом).
         :return: Масса брутто.
         """
         return self.brutto
@@ -203,31 +203,28 @@ class ingredient_model(nomenclature_model, nutrition_component):
     def calculate_netto(self, visited: set = None) -> float:
         """Возвращает нетто листового ингредиента.
 
-        :param visited: Не используется.
+        :param visited: Не используется (для совместимости с контрактом).
         :return: Масса нетто (брутто * коэффициент пересчёта).
         """
         return self.brutto * self.coef
 
-    def calculate_proteins(self, visited: set = None) -> float:
-        """Возвращает белки листового ингредиента.
+    def calculate_nutrient(self, nutrient: str, visited: set = None) -> float:
+        """Возвращает значение нутриента у листового ингредиента.
 
-        :param visited: Не используется.
-        :return: Количество белков.
+        Единая точка входа для рекурсивного обхода состава.
+        У листового ингредиента БЖУ хранятся как атрибуты,
+        поэтому visited не используется — он нужен только для
+        совместимости с контрактом.
+
+        :param nutrient: 'proteins' | 'fats' | 'carbohydrates'.
+        :param visited: Не используется (для совместимости с контрактом).
+        :return: Значение нутриента.
+        :raises arguments_exeption: При неизвестном имени нутриента.
         """
-        return self.proteins
-
-    def calculate_fats(self, visited: set = None) -> float:
-        """Возвращает жиры листового ингредиента.
-
-        :param visited: Не используется.
-        :return: Количество жиров.
-        """
-        return self.fats
-
-    def calculate_carbohydrates(self, visited: set = None) -> float:
-        """Возвращает углеводы листового ингредиента.
-
-        :param visited: Не используется.
-        :return: Количество углеводов.
-        """
-        return self.carbohydrates
+        if nutrient not in self.NUTRIENTS:
+            raise arguments_exeption(
+                "nutrient",
+                f"Неизвестный нутриент: {nutrient!r}. "
+                f"Ожидается один из {self.NUTRIENTS}"
+            )
+        return getattr(self, nutrient)
