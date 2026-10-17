@@ -3,7 +3,6 @@ import pytest
 from pathlib import Path
 
 from Src.Models.ingredient_model import ingredient_model
-from Src.Models.technicalmap_model import technicalmap_model
 from Src.Logics.storage_manager import storage_manager
 from Src.Logics.settings_manager import settings_manager
 
@@ -89,7 +88,8 @@ def test_valid_storage_recipe_has_no_pf_and_no_package():
     # Проверки
     assert recipe.with_pf is False
     assert recipe.with_package is False
-
+from Src.Logics.storage_manager import storage_manager
+from Src.Logics.settings_manager import settings_manager
 
 def test_valid_brutto_from_json():
     """

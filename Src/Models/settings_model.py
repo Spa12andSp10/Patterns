@@ -1,9 +1,11 @@
-from Src.Core.abstract_model import abstact_model
+from Src.Core.abstract_model import abstract_model
 from Src.Models.organization_model import organization_model
+from Src.Core.response_format import response_format
 from Src.Core.validator import validator
+from Src.Core.exception import arguments_exeption
 
 
-class settings_model(abstact_model):
+class settings_model(abstract_model):
     """Модель настроек приложения.
 
     Содержит карточку организации, ФИО руководителя и главного
@@ -16,6 +18,7 @@ class settings_model(abstact_model):
     __first_launch_flag: bool = True
     __max_len_boss_name = 255
     __max_len_account_name = 255
+    __response_format = "TXT"
 
     @property
     def organization(self) -> organization_model:
@@ -78,3 +81,21 @@ class settings_model(abstact_model):
         """
         validator.validate(new_flag, bool, "first_launch_flag")
         self.__first_launch_flag = new_flag
+
+    @property
+    def response_format(self):
+        """Возвращает базовый формат данных"""
+        return self.__response_format
+
+    @response_format.setter
+    def response_format(self, value: str) -> None:
+        """Устанавливает новый базовый формат данных.
+
+        :param value: Новый строчный базовый формат данных (str).
+        :raises arguments_exeption: Если значения нет в допустимых форматах.
+        """
+        print(value)
+        validator.validate(value, str, "response_format")
+        if not response_format.is_valid(value):
+            raise arguments_exeption("response_format", f"Недопустимый формат: {value!r}.")
+        self.__response_format = value

@@ -8,5 +8,6 @@
     },
     "boss_name": "Ivanov I. I.",
     "account_name": "Semyonov. A. G.",
-    "first_launch_flag": true
+    "first_launch_flag": true,
+    "response_format": "CSV"
 }

@@ -3,11 +3,6 @@ import pytest
 from pathlib import Path
 from Src.Logics.storage_manager import storage_manager
 from Src.Logics.settings_manager import settings_manager
-from Src.Models.group_model import group_model
-from Src.Models.range_model import range_model
-from Src.Models.nomenclature_model import nomenclature_model
-from Src.Models.warehouse_model import warehouse_model
-
 
 def _settings_path() -> str:
     """Путь к settings.json в папке Tst (рядом с тестом)."""

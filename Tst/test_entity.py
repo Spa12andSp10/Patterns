@@ -1,11 +1,11 @@
 import pytest
 
-from Src.Core.abstract_model import abstact_model
+from Src.Core.abstract_model import abstract_model
 from Src.Core.entity_model import entity_model
 from Src.Core.exception import arguments_exeption
 
 
-class dummy_entity(abstact_model):
+class dummy_entity(abstract_model):
     """Заглушка для проверки поведения базового класса без доменной логики."""
     pass
 

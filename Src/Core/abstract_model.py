@@ -1,10 +1,9 @@
 from abc import ABC
 import uuid
 from Src.Core.validator import validator
-from Src.Core.exception import arguments_exeption
 
 
-class abstact_model(ABC):
+class abstract_model(ABC):
     """Абстрактный базовый класс для доменных моделей.
 
     Содержит только генерацию уникального кода и сравнение
@@ -54,6 +53,6 @@ class abstact_model(ABC):
 
         Если value — не abstact_model, возвращает False (не бросает исключение).
         """
-        if not isinstance(value, abstact_model):
+        if not isinstance(value, abstract_model):
             return False
         return self.unique_code == value.unique_code
