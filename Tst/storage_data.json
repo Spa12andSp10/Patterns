@@ -3,7 +3,8 @@
         {"name": "Dairy products"},
         {"name": "Meat products"},
         {"name": "Grocery"},
-        {"name": "Vegetables, fruit"}
+        {"name": "Vegetables, fruit"},
+        {"name": "Packages"}
     ],
     "ranges": [
         {"name": "gram", "conversion_factor": 1, "base": null},
@@ -13,16 +14,107 @@
     ],
     "nomenclature": [
         {"name": "Milk", "full_name": "Pasteurized milk 3.2%",
-         "group": "Dairy products", "range": "liter"},
+         "group": "Dairy products", "range": "liter", "type": "product"},
         {"name": "Apple", "full_name": "Astrakhan apple",
-         "group": "Vegetables, fruit", "range": "kilogram"},
+         "group": "Vegetables, fruit", "range": "kilogram", "type": "product"},
         {"name": "Pasta", "full_name": "Durum wheat pasta",
-         "group": "Grocery", "range": "gram"},
+         "group": "Grocery", "range": "gram", "type": "product"},
         {"name": "Beef", "full_name": "Beef (top grade)",
-         "group": "Meat products", "range": "kilogram"}
+         "group": "Meat products", "range": "kilogram", "type": "product"},
+        {"name": "Cloche", "full_name": "Aluminum cloche",
+         "group": "Packages", "range": "gram", "type": "packaging"}
     ],
     "warehouse": [
         {"name": "Main warehouse", "address": "29 Lermontova St."},
         {"name": "Auxiliary warehouse", "address": "52 Krasnoarmeyskaya St."}
-    ]
+    ],
+    "recipes": [
+    {
+    "name": "Pasta with beef in milk-apple sauce",
+    "time": "1 hour 20 minutes",
+    "description": "1. Preparation. Wash the beef, pat dry, cut into 2–3 cm cubes. Boil the pasta in salted water until al dente, drain, reserving some cooking water. Wash the apples, core them, grate on a coarse grater. Peel the onion, dice finely.\n2. Searing the meat. Melt the butter in a deep frying pan. Add the beef, sear over high heat for 5–7 minutes until golden. Add the onion, cook for another 3–4 minutes until translucent.\n3. Stewing. Pour in half of the milk, reduce the heat, cover with a lid. Stew for 40–50 minutes until the meat is tender, stirring occasionally.\n4. Milk-apple sauce. Add the grated apples and the remaining milk. Stir and stew for another 5–7 minutes — the sauce should thicken slightly. Season with salt and pepper to taste.\n5. Combining with pasta. Add the boiled pasta to the pan with the meat and sauce. Stir gently and warm everything together for 2–3 minutes.\n6. Serving. Place on a warmed plate, pour the sauce over the top, garnish with fresh herbs. Serve hot.",
+    "ingredients": [
+      {
+        "full_name": "Durum wheat pasta",
+        "brutto": 400,
+        "proteins": 10.4,
+        "fats": 1.1,
+        "carbohydrates": 69.7,
+        "coef": 1.0,
+        "type": "product"
+      },
+      {
+        "full_name": "Beef (prime grade)",
+        "brutto": 500,
+        "proteins": 18.6,
+        "fats": 16.0,
+        "carbohydrates": 0.0,
+        "coef": 0.7,
+        "type": "product"
+      },
+      {
+        "full_name": "Pasteurized milk 3.2%",
+        "brutto": 300,
+        "proteins": 2.9,
+        "fats": 3.2,
+        "carbohydrates": 4.7,
+        "coef": 1.0,
+        "type": "product"
+      },
+      {
+        "full_name": "Astrakhan apple",
+        "brutto": 200,
+        "proteins": 0.4,
+        "fats": 0.4,
+        "carbohydrates": 9.8,
+        "coef": 0.9,
+        "type": "product"
+      },
+      {
+        "full_name": "Onion",
+        "brutto": 100,
+        "proteins": 1.4,
+        "fats": 0.0,
+        "carbohydrates": 10.4,
+        "coef": 0.9,
+        "type": "product"
+      },
+      {
+        "full_name": "Butter",
+        "brutto": 30,
+        "proteins": 0.5,
+        "fats": 82.5,
+        "carbohydrates": 0.8,
+        "coef": 1.0,
+        "type": "product"
+      },
+      {
+        "full_name": "Salt",
+        "brutto": 5,
+        "proteins": 0.0,
+        "fats": 0.0,
+        "carbohydrates": 0.0,
+        "coef": 1.0,
+        "type": "product"
+      },
+      {
+        "full_name": "Ground black pepper",
+        "brutto": 2,
+        "proteins": 0.0,
+        "fats": 0.0,
+        "carbohydrates": 0.0,
+        "coef": 1.0,
+        "type": "product"
+      }
+    ],
+    "preparation_method": {
+      "Durum wheat pasta": "boil",
+      "Beef (prime grade)": "fry",
+      "Pasteurized milk 3.2%": "boil",
+      "Astrakhan apple": "stew",
+      "Onion": "fry",
+      "Butter": "fry"
+    }
+  }
+]
 }

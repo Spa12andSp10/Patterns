@@ -12,6 +12,7 @@ class abstact_model(ABC):
     """
 
     __unique_code: str
+    __type: str = ""
 
     def __init__(self) -> None:
         """Инициализирует экземпляр и генерирует уникальный код."""
@@ -32,6 +33,21 @@ class abstact_model(ABC):
         """
         validator.validate(value, str, "unique_code")
         self.__unique_code = value.strip()
+
+    @property
+    def item_type(self) -> str:
+        """Возвращает тип объекта."""
+        return self.__type
+
+    @item_type.setter
+    def item_type(self, value: str) -> None:
+        """Устанавливает тип объекта.
+
+        :param value: Тип объекта.
+        :raises arguments_exeption: Если значение не строка.
+        """
+        validator.validate(value, str, "type")
+        self.__type = value
 
     def __eq__(self, value: object) -> bool:
         """Сравнивает объекты по уникальному коду.

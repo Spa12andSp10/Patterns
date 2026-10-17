@@ -2,19 +2,25 @@ import json
 
 from Src.Core.abstract_manager import abstract_manager
 from Src.Core.exception import arguments_exeption
+from Src.Core.ingredient_types import ingredient_type
 from Src.Logics.settings_manager import settings_manager
 from Src.Models.group_model import group_model
+from Src.Models.ingredient_model import ingredient_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
+from Src.Models.technicalmap_model import technicalmap_model
 from Src.Models.warehouse_model import warehouse_model
 
 
 class storage_manager(abstract_manager):
     """Singleton-хранилище доменных справочников.
 
-    Хранит группы номенклатуры, единицы измерения, номенклатуру
-    и склады. Эталонные данные формируются при первом старте
-    из файла storage_data.json.
+    Хранит группы номенклатуры, единицы измерения, номенклатуру,
+    склады и технологические карты (рецепты). Эталонные данные
+    формируются при первом старте из файла storage_data.json.
+
+    Создание доменных моделей делегируется classmethod-конструкторам
+    самих моделей (group_model.create, ingredient_model.create и т.д.).
     """
 
     __default_data_file = "storage_data.json"
@@ -23,6 +29,7 @@ class storage_manager(abstract_manager):
     _nomenclature: list = []
     _warehouse: list = []
     _ranges: list = []
+    _recipes: list = []
 
     def __init__(self):
         """Инициализирует пустые списки справочников (однократно)."""
@@ -32,6 +39,7 @@ class storage_manager(abstract_manager):
             self._nomenclature = []
             self._warehouse = []
             self._ranges = []
+            self._recipes = []
             self._is_loaded = False
             self._data = {}
 
@@ -78,19 +86,26 @@ class storage_manager(abstract_manager):
 
         self._is_loaded = self.convert()
 
+    # --- Конвертеры секций JSON ---
+
     def _convert_ranges(self, data: list) -> None:
         """Преобразует список единиц измерения из JSON.
+
+        Сначала создаёт все единицы без базовой, затем вторым
+        проходом связывает их по имени base.
 
         :param data: Список словарей с описанием единиц измерения.
         """
         by_name: dict = {}
 
         for item in data:
-            param = range_model(
+            param = range_model.create(
                 name=item["name"],
-                conversion_factor=item.get("conversion_factor",
-                                          item.get("conversation_factor", 1)),
-                base=None
+                conversion_factor=item.get(
+                    "conversion_factor",
+                    item.get("conversation_factor", 1),
+                ),
+                base=None,
             )
             by_name[param.name] = param
             self._ranges.append(param)
@@ -106,7 +121,7 @@ class storage_manager(abstract_manager):
         :param data: Список словарей с описанием групп.
         """
         for item in data:
-            self._groups.append(group_model(name=item["name"]))
+            self._groups.append(group_model.create(name=item["name"]))
 
     def _find_nomeclature_name(self, name: str):
         """Ищет группу номенклатуры по наименованию.
@@ -145,11 +160,12 @@ class storage_manager(abstract_manager):
                     f"Не найдена группа/единица для '{item['name']}'"
                 )
             self._nomenclature.append(
-                nomenclature_model(
+                nomenclature_model.create(
                     full_name=item["full_name"],
                     name=item["name"],
                     group=gr,
                     range=rn,
+                    item_type=item.get("type", ""),
                 )
             )
 
@@ -160,11 +176,56 @@ class storage_manager(abstract_manager):
         """
         for item in data:
             self._warehouse.append(
-                warehouse_model(name=item["name"], address=item["address"])
+                warehouse_model.create(
+                    name=item["name"],
+                    address=item["address"],
+                )
+            )
+
+    def _convert_recipes(self, data: list) -> None:
+        """Преобразует список рецептов из JSON.
+
+        Каждый элемент — словарь с полями:
+          - name: наименование блюда;
+          - time: время приготовления;
+          - description: инструкция;
+          - ingredients: список ингредиентов;
+          - preparation_method: {наименование: способ}.
+
+        Ингредиенты создаются через ingredient_model.create,
+        сама карта — через technicalmap_model.create.
+
+        :param data: Список словарей с описанием рецептов.
+        """
+        for item in data:
+            ingredients = [
+                ingredient_model.create(
+                    full_name=ing["full_name"],
+                    brutto=ing["brutto"],
+                    proteins=ing["proteins"],
+                    fats=ing["fats"],
+                    carbohydrates=ing["carbohydrates"],
+                    coef=ing.get("coef", 1.0),
+                    item_type=ing.get("type", ingredient_type.PRODUCT),
+                )
+                for ing in item.get("ingredients", [])
+            ]
+
+            self._recipes.append(
+                technicalmap_model.create(
+                    ingredients=ingredients,
+                    preparation_method=item.get("preparation_method", {}),
+                    description=item["description"],
+                    time=item["time"],
+                    name=item["name"],
+                )
             )
 
     def convert(self) -> bool:
         """Преобразует «сырые» данные JSON в доменные модели.
+
+        Очищает текущие списки и последовательно наполняет их
+        из соответствующих секций self._data.
 
         :return: True, если преобразование прошло успешно.
         """
@@ -172,11 +233,13 @@ class storage_manager(abstract_manager):
         self._nomenclature = []
         self._warehouse = []
         self._ranges = []
+        self._recipes = []
 
         self._convert_ranges(self._data.get("ranges", []))
         self._convert_groups(self._data.get("groups", []))
         self._convert_nomenclature(self._data.get("nomenclature", []))
         self._convert_warehouse(self._data.get("warehouse", []))
+        self._convert_recipes(self._data.get("recipes", []))
 
         return True
 
@@ -184,7 +247,8 @@ class storage_manager(abstract_manager):
         """Формирует первичные данные при первом старте.
 
         Если флаг first_launch_flag установлен — загружает эталонные
-        данные и сбрасывает флаг. Иначе ничего не делает.
+        данные, дозаполняет справочники через конвертеры и сбрасывает
+        флаг. Иначе ничего не делает.
 
         :param file_name: Путь к файлу эталонных данных.
         :return: True, если данные были сформированы, иначе False.
@@ -200,13 +264,14 @@ class storage_manager(abstract_manager):
         try:
             self._data = self._read_json(inner_file_name)
         except (FileNotFoundError, json.JSONDecodeError):
-            self._is_loaded = False
-            return False
+            self._data = {}
 
         self._is_loaded = self.convert()
+
         manager.settings.first_launch_flag = False
         return self._is_loaded
 
+    # --- Свойства доступа к справочникам ---
 
     @property
     def groups(self) -> list:
@@ -227,6 +292,13 @@ class storage_manager(abstract_manager):
     def warehouses(self) -> list:
         """Возвращает список складов."""
         return self._warehouse
+
+    @property
+    def recipes(self) -> list:
+        """Возвращает список технологических карт (рецептов)."""
+        return self._recipes
+
+    # --- Добавление элементов ---
 
     @staticmethod
     def _is_unique(items: list, candidate) -> bool:
@@ -287,3 +359,29 @@ class storage_manager(abstract_manager):
             self._warehouse.append(value)
             return True
         return False
+
+    def add_recipe(self, value) -> bool:
+        """Добавляет рецепт, если его ещё нет (по имени).
+
+        :param value: Добавляемая технологическая карта.
+        :return: True, если рецепт добавлен, иначе False.
+        """
+        if self._is_unique(self._recipes, value):
+            self._recipes.append(value)
+            return True
+        return False
+
+    def load_default_ranges(self) -> None:
+        """Наполняет справочник единиц эталонными значениями.
+
+        Использует classmethod-конструкторы range_model:
+        create_gram, create_kilogram, create_tonna.
+        """
+        gram = range_model.create_gram()
+        self.add_range(gram)
+
+        kilogram = range_model.create_kilogram(base=gram)
+        self.add_range(kilogram)
+
+        tonna = range_model.create_tonna(base=kilogram)
+        self.add_range(tonna)

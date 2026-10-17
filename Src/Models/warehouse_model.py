@@ -1,5 +1,4 @@
 from Src.Core.entity_model import entity_model
-from Src.Core.exception import arguments_exeption, max_length_exeption
 from Src.Core.validator import validator
 
 
@@ -8,6 +7,7 @@ class warehouse_model(entity_model):
 
     Содержит определения: наименование, адрес и максимальную
     длину адреса.
+    Создаётся через classmethod-конструктор create.
     """
 
     __address: str = ""
@@ -22,6 +22,16 @@ class warehouse_model(entity_model):
         super().__init__()
         self.name = name
         self.address = address
+
+    @classmethod
+    def create(cls, name: str, address: str) -> "warehouse_model":
+        """Создаёт склад по параметрам.
+
+        :param name: Наименование склада.
+        :param address: Адрес склада.
+        :return: Созданный склад.
+        """
+        return cls(name=name, address=address)
 
     @property
     def address(self) -> str:

@@ -1,7 +1,7 @@
 from Src.Core.entity_model import entity_model
 from Src.Models.group_model import group_model
 from Src.Models.range_model import range_model
-from Src.Core.exception import arguments_exeption, max_length_exeption
+from Src.Core.exception import arguments_exeption
 from Src.Core.validator import validator
 
 
@@ -11,6 +11,7 @@ class nomenclature_model(entity_model):
     Содержит определения: наименование, полное наименование,
     максимальную длину полного наименования, группу номенклатуры
     и единицу измерения.
+    Создаётся через classmethod-конструктор create.
     """
 
     __full_name: str = ""
@@ -20,19 +21,41 @@ class nomenclature_model(entity_model):
 
     def __init__(self, full_name: str = "", name: str = "",
                  group: group_model = None,
-                 range: range_model = None) -> None:
+                 range: range_model = None,
+                 item_type: str = "") -> None:
         """Инициализирует номенклатуру.
 
         :param full_name: Полное наименование номенклатуры.
         :param name: Краткое наименование номенклатуры.
         :param group: Группа номенклатуры или None.
         :param range: Единица измерения или None.
+        :param item_type: Тип номенклатуры.
         """
         super().__init__()
         self.name = name
         self.full_name = full_name
         self.group = group
         self.range = range
+        self.type = item_type
+
+    @classmethod
+    def create(cls, full_name: str, name: str,
+               group: group_model = None,
+               range: range_model = None,
+               item_type: str = "") -> "nomenclature_model":
+        """Создаёт номенклатуру по параметрам.
+
+        :param full_name: Полное наименование.
+        :param name: Краткое наименование.
+        :param group: Группа номенклатуры.
+        :param range: Единица измерения.
+        :param item_type: Тип номенклатуры.
+        :return: Созданная номенклатура.
+        """
+        return cls(
+            full_name=full_name, name=name, group=group,
+            range=range, item_type=item_type,
+        )
 
     @property
     def full_name(self) -> str:
@@ -47,7 +70,8 @@ class nomenclature_model(entity_model):
         :raises arguments_exeption: Если значение не строка или None.
         :raises max_length_exeption: Если длина превышает максимально допустимую.
         """
-        validator.validate(value, str, self.__full_name_max_lenght)
+        validator.validate(value, str, "full_name",
+                           max_len=self.__full_name_max_lenght)
         self.__full_name = value
 
     @property
@@ -57,12 +81,8 @@ class nomenclature_model(entity_model):
 
     @group.setter
     def group(self, value: group_model) -> None:
-        """Устанавливает группу номенклатуры.
-
-        :param value: Группа номенклатуры или None.
-        :raises arguments_exeption: Если значение не group_model и не None.
-        """
-        validator.validate(value, group_model, "group")
+        if value is not None and not isinstance(value, group_model):
+            raise arguments_exeption("group", "Некорректно переданный аргумент")
         self.__group = value
 
     @property
@@ -72,10 +92,6 @@ class nomenclature_model(entity_model):
 
     @range.setter
     def range(self, value: range_model) -> None:
-        """Устанавливает единицу измерения номенклатуры.
-
-        :param value: Единица измерения или None.
-        :raises arguments_exeption: Если значение не range_model и не None.
-        """
-        validator.validate(value, range_model, "range")
+        if value is not None and not isinstance(value, range_model):
+            raise arguments_exeption("range", "Некорректно переданный аргумент")
         self.__range = value
