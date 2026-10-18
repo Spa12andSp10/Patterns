@@ -1,8 +1,8 @@
 from Src.Core.abstract_model import abstract_model
 from Src.Models.organization_model import organization_model
-from Src.Core.response_format import response_format
 from Src.Core.validator import validator
 from Src.Core.exception import arguments_exeption
+from Src.Dtos.report_type_enum import report_type_enum
 
 
 class settings_model(abstract_model):
@@ -83,19 +83,28 @@ class settings_model(abstract_model):
         self.__first_launch_flag = new_flag
 
     @property
-    def response_format(self):
-        """Возвращает базовый формат данных"""
+    def response_format(self) -> str:
+        """Возвращает базовый формат данных (значение из settings.json)."""
         return self.__response_format
 
     @response_format.setter
     def response_format(self, value: str) -> None:
         """Устанавливает новый базовый формат данных.
 
+        Формат проверяется по единому справочнику report_type_enum —
+        это единственный источник истины о поддерживаемых форматах.
+        from_slug регистронезависим, поэтому 'HTML', 'html' и 'Html'
+        считаются одним и тем же форматом.
+
         :param value: Новый строчный базовый формат данных (str).
-        :raises arguments_exeption: Если значения нет в допустимых форматах.
+        :raises arguments_exeption: Если значение не строка или None.
+        :raises arguments_exeption: Если формат отсутствует в report_type_enum.
         """
-        print(value)
         validator.validate(value, str, "response_format")
-        if not response_format.is_valid(value):
-            raise arguments_exeption("response_format", f"Недопустимый формат: {value!r}.")
+        try:
+            report_type_enum.from_slug(value)
+        except ValueError:
+            raise arguments_exeption(
+                "response_format", f"Недопустимый формат: {value!r}."
+            )
         self.__response_format = value

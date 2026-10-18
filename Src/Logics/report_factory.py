@@ -1,6 +1,5 @@
 from Src.Core.abstract_factory import abstract_factory
 from Src.Core.abstract_report import abstract_report
-from Src.Core.response_format import response_format
 from Src.Dtos.report_type_enum import report_type_enum
 from Src.Logics.settings_manager import settings_manager
 from Src.Logics.text_report import text_report
@@ -17,14 +16,6 @@ class report_factory(abstract_factory):
     __mapping: dict
     __settings: settings_manager
 
-    __format = {
-        response_format.TXT: report_type_enum.TXT,
-        response_format.CSV: report_type_enum.CSV,
-        response_format.MARKDOWN: report_type_enum.MARKDOWN,
-        response_format.XML: report_type_enum.XML,
-        response_format.HTML: report_type_enum.HTML,
-        report_type_enum.PNG: report_type_enum.PNG,
-    }
 
     def __init__(self, settings: settings_manager = None):
         """Инициализирует фабрику.
@@ -50,15 +41,24 @@ class report_factory(abstract_factory):
         if report_type not in self.__mapping:
             raise ValueError(f"Неизвестный тип отчёта: {report_type!r}")
         return self.__mapping[report_type]()
-
+    
     def create_default(self) -> abstract_report:
         """Создает отчет в формате, указанном в настройках (settings.json).
-        
-        :raises arguments_exeption: Если формат в настройках не найден.
+
+        Формат читается из settings_model.response_format и переводится
+        в report_type_enum через from_slug. Если
+        формат в настройках оказался невалидным (например, settings.json
+        правили вручную в обход сеттера), бросается понятная ошибка
+        вместо «сырого» ValueError.
+
+        :raises arguments_exeption: Если формат в настройках не найден
+            в справочнике report_type_enum.
         """
         form = self.__settings.settings.response_format
-
-        if form not in self.__format:
-            raise arguments_exeption("create_default", f"Неизвестный формат в настройках: {form!r}")
-
-        return self.create(self.__format[form])
+        try:
+            report_type = report_type_enum.from_slug(form)
+        except ValueError:
+            raise arguments_exeption(
+                "create_default", f"Неизвестный формат в настройках: {form!r}"
+            )
+        return self.create(report_type)
