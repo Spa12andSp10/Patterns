@@ -3,14 +3,18 @@ from Src.Core.validator import validator
 from Src.Core.exception import arguments_exeption
 
 
-"""
-Модель для хранения результата формирования отчета.
-Может содержать либо текстовый результат (HTML, XML, TXT),
-либо бинарный файл (CSV, PNG, Markdown).
-"""
 class report_result_dto(entity_model):
+    """Модель для хранения результата формирования отчета.
+
+    Может содержать либо текстовый результат (HTML, XML, TXT),
+    либо бинарный файл (CSV, PNG, Markdown). Дополнительно хранит
+    MIME-тип результата — его выставляет сам отчёт, чтобы потребитель
+    (main.py, контроллер) не знал, какой формат перед ним.
+    """
+
     __text: str = ""
     __binary: bytes = b''
+    __mime: str = ""
 
     @property
     def text(self) -> str:
@@ -20,7 +24,7 @@ class report_result_dto(entity_model):
     @text.setter
     def text(self, value: str) -> None:
         """Устанавливает текстовый результат.
-        
+
         При установке текста бинарные данные очищаются.
         :param value: Текст отчета.
         :raises arguments_exeption: Если значение не строка.
@@ -42,7 +46,7 @@ class report_result_dto(entity_model):
     @binary.setter
     def binary(self, value: bytes) -> None:
         """Устанавливает бинарный результат.
-        
+
         При установке бинарных данных текстовый результат очищается.
         :param value: Байты файла.
         :raises arguments_exeption: Если значение не bytes или bytearray.
@@ -52,3 +56,18 @@ class report_result_dto(entity_model):
         if len(value) > 0:
             self.__text = ""
             self.__binary = bytes(value)
+
+    @property
+    def mime(self) -> str:
+        """Возвращает MIME-тип результата (например, 'text/csv; charset=utf-8')."""
+        return self.__mime
+
+    @mime.setter
+    def mime(self, value: str) -> None:
+        """Устанавливает MIME-тип результата.
+
+        :param value: MIME-строка.
+        :raises arguments_exeption: Если значение не строка или пустое.
+        """
+        validator.validate(value, str, "mime")
+        self.__mime = value.strip()

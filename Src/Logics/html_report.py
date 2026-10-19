@@ -1,15 +1,12 @@
 from Src.Core.abstract_report import abstract_report
 from Src.Core.validator import validator
 from Src.Dtos.report_result_dto import report_result_dto
+from Src.Dtos.report_type_enum import report_type_enum
 from Src.Logics.report_data_extractor import report_data_extractor
 
 
 class html_report(abstract_report):
-    """Формирует отчет в формате HTML-таблицы.
-
-    Шаблон статический, поэтому обходимся без шаблонизатора:
-    собираем разметку обычной конкатенацией строк.
-    """
+    """Формирует отчет в формате HTML-таблицы."""
 
     __STYLE = (
         "table { border-collapse: collapse; } "
@@ -18,14 +15,9 @@ class html_report(abstract_report):
     )
 
     def build(self, source):
-        """Формирует HTML-код из доменной модели.
-
-        :param source: Доменная модель (рецепт, номенклатура, единица измерения).
-        :return: DTO с текстом HTML.
-        """
         validator.validate(source, object, "source")
 
-        header, rows = report_data_extractor.extract(source)
+        data = report_data_extractor.extract(source)
 
         parts = [
             "<!DOCTYPE html>",
@@ -37,12 +29,12 @@ class html_report(abstract_report):
             "<thead><tr>",
         ]
 
-        for h in header:
+        for h in data.header:
             parts.append(f"<th>{h}</th>")
         parts.append("</tr></thead>")
 
         parts.append("<tbody>")
-        for row in rows:
+        for row in data.rows:
             parts.append("<tr>")
             for cell in row:
                 parts.append(f"<td>{cell}</td>")
@@ -54,4 +46,5 @@ class html_report(abstract_report):
 
         result = report_result_dto()
         result.text = "".join(parts)
+        result.mime = report_type_enum.HTML.mime
         return result

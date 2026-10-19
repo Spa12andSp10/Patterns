@@ -27,6 +27,12 @@ def reset_storage():
     yield
 
 
+def _extract(source):
+    """Хелпер: возвращает (header, rows) из DTO."""
+    dto = report_data_extractor.extract(source)
+    return dto.header, dto.rows
+
+
 def test_valid_extract_recipe_headers():
     """
     Проверяет, что заголовки для рецепта сформированы корректно.
@@ -38,7 +44,7 @@ def test_valid_extract_recipe_headers():
     recipe = sm.recipes[0]
 
     # Действие
-    header, data = report_data_extractor.extract(recipe)
+    header, data = _extract(recipe)
 
     # Проверки
     expected_header = ["Code", "Name", "Brutto", "Netto", "Proteins", "Fats", "Carbohydrates"]
@@ -57,7 +63,7 @@ def test_valid_extract_recipe_row_count():
     recipe = sm.recipes[0]
 
     # Действие
-    header, data = report_data_extractor.extract(recipe)
+    header, data = _extract(recipe)
 
     # Проверки
     assert len(data) == 8
@@ -74,7 +80,7 @@ def test_valid_extract_recipe_first_row_values():
     recipe = sm.recipes[0]
 
     # Действие
-    header, data = report_data_extractor.extract(recipe)
+    header, data = _extract(recipe)
     first_row = data[0]
 
     # Проверки
@@ -99,7 +105,7 @@ def test_valid_extract_nomenclature_headers():
     milk = next(n for n in sm.nomenclatures if n.name == "Milk")
 
     # Действие
-    header, data = report_data_extractor.extract(milk)
+    header, data = _extract(milk)
 
     # Проверки
     expected_header = ["Code", "Name", "Full name", "Group", "Range"]
@@ -119,7 +125,7 @@ def test_valid_extract_nomenclature_data_values():
     milk = next(n for n in sm.nomenclatures if n.name == "Milk")
 
     # Действие
-    header, data = report_data_extractor.extract(milk)
+    header, data = _extract(milk)
     row = data[0]
 
     # Проверки
@@ -145,7 +151,7 @@ def test_valid_extract_nomenclature_no_group_and_range():
     )
 
     # Действие
-    header, data = report_data_extractor.extract(empty_nom)
+    header, data = _extract(empty_nom)
     row = data[0]
 
     # Проверки
@@ -164,7 +170,7 @@ def test_valid_extract_range_headers():
     kg = next(r for r in sm.ranges if r.name == "kilogram")
 
     # Действие
-    header, data = report_data_extractor.extract(kg)
+    header, data = _extract(kg)
 
     # Проверки
     expected_header = ["Code", "Name", "Coef", "Base"]
@@ -184,7 +190,7 @@ def test_valid_extract_range_data_values():
     kg = next(r for r in sm.ranges if r.name == "kilogram")
 
     # Действие
-    header, data = report_data_extractor.extract(kg)
+    header, data = _extract(kg)
     row = data[0]
 
     # Проверки
@@ -206,7 +212,7 @@ def test_valid_extract_range_no_base():
     gram = next(r for r in sm.ranges if r.name == "gram")
 
     # Действие
-    header, data = report_data_extractor.extract(gram)
+    header, data = _extract(gram)
     row = data[0]
 
     # Проверки
