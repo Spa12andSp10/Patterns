@@ -13,19 +13,26 @@ class settings_manager(abstract_manager):
     _settings: settings_model = settings_model()
 
     __required_top_keys = (
-        "organization", "account_name", "boss_name", "first_launch_flag",
+        "organization", "account_name", "boss_name", "first_launch_flag", "response_format"
     )
     __required_org_keys = (
         "name", "inn", "bic", "account", "owner",
     )
 
     def __new__(cls):
+        """Реализует шаблон Singleton.
+        
+        :return: Единственный экземпляр settings_manager.
+        """
         if not hasattr(cls, "instance"):
             cls.instance = super(settings_manager, cls).__new__(cls)
         return cls.instance
 
     def load(self, file_name: str = "") -> None:
-        """Загружает настройки из JSON-файла."""
+        """Загружает настройки из JSON-файла.
+
+        :param file_name: Путь к файлу настроек. Если пусто — ищет settings.json.
+        """
         inner_file_name = file_name if file_name != "" else self.__default_file_name
         self._is_loaded = False
         try:
@@ -36,7 +43,10 @@ class settings_manager(abstract_manager):
         self._is_loaded = self.convert()
 
     def convert(self) -> bool:
-        """Преобразует «сырые» данные JSON в settings_model."""
+        """Преобразует «сырые» данные JSON в settings_model.
+
+        :return: True, если преобразование прошло успешно.
+        """
         validator.require_keys(self._data, self.__required_top_keys, field="settings")
 
         org_data = self._data["organization"]
@@ -55,16 +65,20 @@ class settings_manager(abstract_manager):
         self._settings.account_name = self._data["account_name"]
         self._settings.boss_name = self._data["boss_name"]
         self._settings.first_launch_flag = self._data["first_launch_flag"]
+        self._settings.response_format = self._data["response_format"]
         return True
 
     @property
     def settings(self) -> settings_model:
+        """Возвращает модель настроек."""
         return self._settings
 
     @settings.setter
     def settings(self, value: settings_model):
+        """Устанавливает модель настроек."""
         self._settings = value
 
     @property
     def data(self) -> dict:
+        """Возвращает словарь с «сырыми» данными из JSON."""
         return self._data

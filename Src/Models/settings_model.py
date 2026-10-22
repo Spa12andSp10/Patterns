@@ -1,9 +1,11 @@
-from Src.Core.abstract_model import abstact_model
+from Src.Core.abstract_model import abstract_model
 from Src.Models.organization_model import organization_model
 from Src.Core.validator import validator
+from Src.Core.exception import arguments_exeption
+from Src.Dtos.report_type_enum import report_type_enum
 
 
-class settings_model(abstact_model):
+class settings_model(abstract_model):
     """Модель настроек приложения.
 
     Содержит карточку организации, ФИО руководителя и главного
@@ -16,6 +18,7 @@ class settings_model(abstact_model):
     __first_launch_flag: bool = True
     __max_len_boss_name = 255
     __max_len_account_name = 255
+    __response_format = "TXT"
 
     @property
     def organization(self) -> organization_model:
@@ -78,3 +81,30 @@ class settings_model(abstact_model):
         """
         validator.validate(new_flag, bool, "first_launch_flag")
         self.__first_launch_flag = new_flag
+
+    @property
+    def response_format(self) -> str:
+        """Возвращает базовый формат данных (значение из settings.json)."""
+        return self.__response_format
+
+    @response_format.setter
+    def response_format(self, value: str) -> None:
+        """Устанавливает новый базовый формат данных.
+
+        Формат проверяется по единому справочнику report_type_enum —
+        это единственный источник истины о поддерживаемых форматах.
+        from_slug регистронезависим, поэтому 'HTML', 'html' и 'Html'
+        считаются одним и тем же форматом.
+
+        :param value: Новый строчный базовый формат данных (str).
+        :raises arguments_exeption: Если значение не строка или None.
+        :raises arguments_exeption: Если формат отсутствует в report_type_enum.
+        """
+        validator.validate(value, str, "response_format")
+        try:
+            report_type_enum.from_slug(value)
+        except ValueError:
+            raise arguments_exeption(
+                "response_format", f"Недопустимый формат: {value!r}."
+            )
+        self.__response_format = value

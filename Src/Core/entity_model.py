@@ -1,9 +1,8 @@
-from Src.Core.abstract_model import abstact_model
-from Src.Core.exception import arguments_exeption, max_length_exeption
+from Src.Core.abstract_model import abstract_model
 from Src.Core.validator import validator
 
 
-class entity_model(abstact_model):
+class entity_model(abstract_model):
     """Общий класс для наследования доменных моделей.
 
     Содержит стандартные определения: уникальный код (в базовом классе)
