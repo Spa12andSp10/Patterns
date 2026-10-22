@@ -36,7 +36,7 @@ class nomenclature_model(entity_model):
         self.full_name = full_name
         self.group = group
         self.range = range
-        self.type = item_type
+        self.item_type = item_type
 
     @classmethod
     def create(cls, full_name: str, name: str,
