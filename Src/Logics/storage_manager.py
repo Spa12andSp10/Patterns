@@ -3,6 +3,7 @@ import json
 from Src.Core.abstract_manager import abstract_manager
 from Src.Core.exception import arguments_exeption
 from Src.Core.ingredient_types import ingredient_type
+from Src.Logics.convert_factory import convert_factory
 from Src.Logics.settings_manager import settings_manager
 from Src.Models.group_model import group_model
 from Src.Models.ingredient_model import ingredient_model
@@ -86,7 +87,53 @@ class storage_manager(abstract_manager):
 
         self._is_loaded = self.convert()
 
-    # --- Конвертеры секций JSON ---
+
+    def save(self, file_name: str = "") -> bool:
+        """Сохраняет «сырые» данные self._data обратно в JSON-файл.
+
+        :param file_name: Путь к файлу. Если пусто — storage_data.json.
+        :return: True, если запись прошла успешно, иначе False.
+        """
+        inner_file_name = file_name if file_name != "" else self.__default_data_file
+        if not self._data:
+            return False
+        try:
+            with open(inner_file_name, "w", encoding="utf-8") as file:
+                json.dump(self._data, file, ensure_ascii=False, indent=2)
+            return True
+        except OSError:
+            return False
+
+    def save_models(self, file_name: str = "") -> bool:
+        """Сохраняет текущие доменные модели в JSON-файл.
+
+        Собирает секции groups/ranges/nomenclature/warehouse/recipes
+        из списков моделей и сериализует через convert_factory.
+
+        :param file_name: Путь к файлу. Если пусто — storage_data.json.
+        :return: True, если запись прошла успешно, иначе False.
+        """
+        inner_file_name = file_name if file_name != "" else self.__default_data_file
+        factory = convert_factory.create_default()
+
+        payload = {
+            "groups": [factory.convert(g) for g in self._groups],
+            "ranges": [factory.convert(r) for r in self._ranges],
+            "nomenclature": [factory.convert(n) for n in self._nomenclature],
+            "warehouse": [factory.convert(w) for w in self._warehouse],
+            "recipes": [factory.convert(r) for r in self._recipes],
+        }
+
+        try:
+            data = json.loads(convert_factory.to_json(payload))
+
+            with open(inner_file_name, "w", encoding="utf-8") as file:
+                json.dump(data, file, ensure_ascii=False, indent=2)
+
+            self._data = data
+            return True
+        except OSError:
+            return False
 
     def _convert_ranges(self, data: list) -> None:
         """Преобразует список единиц измерения из JSON.
@@ -269,9 +316,10 @@ class storage_manager(abstract_manager):
         self._is_loaded = self.convert()
 
         manager.settings.first_launch_flag = False
+        manager.save()
+
         return self._is_loaded
 
-    # --- Свойства доступа к справочникам ---
 
     @property
     def groups(self) -> list:
@@ -298,7 +346,6 @@ class storage_manager(abstract_manager):
         """Возвращает список технологических карт (рецептов)."""
         return self._recipes
 
-    # --- Добавление элементов ---
 
     @staticmethod
     def _is_unique(items: list, candidate) -> bool:

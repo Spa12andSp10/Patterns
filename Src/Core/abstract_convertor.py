@@ -1,6 +1,10 @@
 import json
 from abc import ABC, abstractmethod
-from datetime import date, datetime, time, timedelta
+
+from Src.Core.json_convertor_factory import json_convertor_factory
+
+# Явная регистрация стандартных обработчиков (идемпотентна).
+json_convertor_factory.create_default()
 
 
 class abstract_convertor(ABC):
@@ -25,18 +29,13 @@ class abstract_convertor(ABC):
 
     @staticmethod
     def _to_json(value):
-        """Приводит значение к JSON-сериализуемому виду."""
-        if isinstance(value, dict):
-            return {k: abstract_convertor._to_json(v) for k, v in value.items()}
-        if isinstance(value, (list, tuple)):
-            return [abstract_convertor._to_json(v) for v in value]
-        if isinstance(value, (datetime, date, time)):
-            return value.isoformat()
-        if isinstance(value, timedelta):
-            return value.total_seconds()
-        if isinstance(value, (str, int, float, bool)) or value is None:
-            return value
-        return str(value)
+        """Приводит значение к JSON-сериализуемому виду.
+
+        Делегирует разбор типов фабрике json_convertor_factory.
+        Новые типы регистрируются через register() без правки
+        этого метода.
+        """
+        return json_convertor_factory.convert(value, abstract_convertor._to_json)
 
     @classmethod
     def to_json(cls, data: dict) -> str:

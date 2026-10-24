@@ -1,0 +1,18 @@
+{
+  "account_name": "Semyonov. A. G.",
+  "boss_name": "Ivanov I. I.",
+  "first_launch_flag": false,
+  "item_type": "",
+  "organization": {
+    "account": "40702810900000000000",
+    "bic": "044525225",
+    "inn": "7707083893",
+    "item_type": "",
+    "max_lenght": 50,
+    "name": "Romashka LLC",
+    "owner": "Romashka",
+    "unique_code": "2eb7fd6f64fe46c4acad383bdf32e555"
+  },
+  "response_format": "CSV",
+  "unique_code": "157af4c4439449a3994c031063f5ea7b"
+}
