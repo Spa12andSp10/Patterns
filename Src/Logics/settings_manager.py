@@ -1,9 +1,11 @@
 import json
 
 from Src.Core.abstract_manager import abstract_manager
+from Src.Logics.convert_factory import convert_factory
 from Src.Models.settings_model import settings_model
 from Src.Models.organization_model import organization_model
 from Src.Core.validator import validator
+from Src.Core.abstract_convertor import abstract_convertor
 
 
 class settings_manager(abstract_manager):
@@ -36,11 +38,52 @@ class settings_manager(abstract_manager):
         inner_file_name = file_name if file_name != "" else self.__default_file_name
         self._is_loaded = False
         try:
-            with open(inner_file_name, "r") as file:
+            with open(inner_file_name, "r", encoding="utf-8") as file:
                 self._data = json.load(file)
         except Exception:
             return
         self._is_loaded = self.convert()
+
+
+    def save(self, file_name: str = "") -> bool:
+        """Сохраняет «сырые» данные self._data обратно в JSON-файл.
+
+        :param file_name: Путь к файлу. Если пусто — settings.json.
+        :return: True, если запись прошла успешно, иначе False.
+        """
+        inner_file_name = file_name if file_name != "" else self.__default_file_name
+        if not self._data:
+            return False
+        try:
+            with open(inner_file_name, "w", encoding="utf-8") as file:
+                json.dump(self._data, file, ensure_ascii=False, indent=2)
+            return True
+        except OSError:
+            return False
+
+    def save_settings(self, file_name: str = "") -> bool:
+        """Сохраняет текущую модель self._settings в JSON-файл.
+
+        Сериализация доменных моделей делегируется convert_factory,
+        чтобы не дублировать логику обхода property-полей.
+
+        :param file_name: Путь к файлу. Если пусто — settings.json.
+        :return: True, если запись прошла успешно, иначе False.
+        """
+        inner_file_name = file_name if file_name != "" else self.__default_file_name
+        try:
+            walker = convert_factory().create()
+            payload = walker.convert(self._settings)
+            data = json.loads(abstract_convertor.to_json(payload))
+
+            with open(inner_file_name, "w", encoding="utf-8") as file:
+                json.dump(data, file, ensure_ascii=False, indent=2)
+
+            self._data = data
+            return True
+        except OSError:
+            return False
+
 
     def convert(self) -> bool:
         """Преобразует «сырые» данные JSON в settings_model.

@@ -1,0 +1,321 @@
+{
+  "groups": [
+    {
+      "max_lenght": 50,
+      "name": "Dairy products",
+      "unique_code": "20940d0b854a4b8eac237a6c972b3be5"
+    },
+    {
+      "max_lenght": 50,
+      "name": "Meat products",
+      "unique_code": "1d5f0fd5c8bc43a0bf41f2991810b831"
+    },
+    {
+      "max_lenght": 50,
+      "name": "Grocery",
+      "unique_code": "de7e928468f346eaa21a1b2e43aff6f9"
+    },
+    {
+      "max_lenght": 50,
+      "name": "Vegetables, fruit",
+      "unique_code": "9f815af4b5b749d88744ec63ba6616fb"
+    },
+    {
+      "max_lenght": 50,
+      "name": "Packages",
+      "unique_code": "facf98b6c8124e0e9b18c1edd2021070"
+    }
+  ],
+  "ranges": [
+    {
+      "conversion_factor": 1.0,
+      "max_lenght": 50,
+      "name": "gram",
+      "unique_code": "65baec6e3caf4841b3daa9b19a3718be"
+    },
+    {
+      "base": {
+        "conversion_factor": 1.0,
+        "max_lenght": 50,
+        "name": "gram",
+        "unique_code": "65baec6e3caf4841b3daa9b19a3718be"
+      },
+      "conversion_factor": 1000.0,
+      "max_lenght": 50,
+      "name": "kilogram",
+      "unique_code": "a8988af9f46742d88777133e16a12b66"
+    },
+    {
+      "conversion_factor": 1.0,
+      "max_lenght": 50,
+      "name": "milliliter",
+      "unique_code": "01e4dcb98d5046449639d12337ccdc63"
+    },
+    {
+      "base": {
+        "conversion_factor": 1.0,
+        "max_lenght": 50,
+        "name": "milliliter",
+        "unique_code": "01e4dcb98d5046449639d12337ccdc63"
+      },
+      "conversion_factor": 1000.0,
+      "max_lenght": 50,
+      "name": "liter",
+      "unique_code": "3a42a4d814de46649b4bd7f4e2091c9e"
+    }
+  ],
+  "nomenclature": [
+    {
+      "full_name": "Pasteurized milk 3.2%",
+      "group": {
+        "max_lenght": 50,
+        "name": "Dairy products",
+        "unique_code": "20940d0b854a4b8eac237a6c972b3be5"
+      },
+      "item_type": "product",
+      "max_lenght": 50,
+      "name": "Milk",
+      "range": {
+        "base": {
+          "conversion_factor": 1.0,
+          "max_lenght": 50,
+          "name": "milliliter",
+          "unique_code": "01e4dcb98d5046449639d12337ccdc63"
+        },
+        "conversion_factor": 1000.0,
+        "max_lenght": 50,
+        "name": "liter",
+        "unique_code": "3a42a4d814de46649b4bd7f4e2091c9e"
+      },
+      "unique_code": "d8e703f00f7c420abe9dd57230d30bc2"
+    },
+    {
+      "full_name": "Astrakhan apple",
+      "group": {
+        "max_lenght": 50,
+        "name": "Vegetables, fruit",
+        "unique_code": "9f815af4b5b749d88744ec63ba6616fb"
+      },
+      "item_type": "product",
+      "max_lenght": 50,
+      "name": "Apple",
+      "range": {
+        "base": {
+          "conversion_factor": 1.0,
+          "max_lenght": 50,
+          "name": "gram",
+          "unique_code": "65baec6e3caf4841b3daa9b19a3718be"
+        },
+        "conversion_factor": 1000.0,
+        "max_lenght": 50,
+        "name": "kilogram",
+        "unique_code": "a8988af9f46742d88777133e16a12b66"
+      },
+      "unique_code": "ad40ad8957e0406699562afcd733b2c2"
+    },
+    {
+      "full_name": "Durum wheat pasta",
+      "group": {
+        "max_lenght": 50,
+        "name": "Grocery",
+        "unique_code": "de7e928468f346eaa21a1b2e43aff6f9"
+      },
+      "item_type": "product",
+      "max_lenght": 50,
+      "name": "Pasta",
+      "range": {
+        "conversion_factor": 1.0,
+        "max_lenght": 50,
+        "name": "gram",
+        "unique_code": "65baec6e3caf4841b3daa9b19a3718be"
+      },
+      "unique_code": "5a02e813d1c041e79136bbba71b33cc7"
+    },
+    {
+      "full_name": "Beef (top grade)",
+      "group": {
+        "max_lenght": 50,
+        "name": "Meat products",
+        "unique_code": "1d5f0fd5c8bc43a0bf41f2991810b831"
+      },
+      "item_type": "product",
+      "max_lenght": 50,
+      "name": "Beef",
+      "range": {
+        "base": {
+          "conversion_factor": 1.0,
+          "max_lenght": 50,
+          "name": "gram",
+          "unique_code": "65baec6e3caf4841b3daa9b19a3718be"
+        },
+        "conversion_factor": 1000.0,
+        "max_lenght": 50,
+        "name": "kilogram",
+        "unique_code": "a8988af9f46742d88777133e16a12b66"
+      },
+      "unique_code": "62bbda43709f454da9e376afff07bcfd"
+    },
+    {
+      "full_name": "Aluminum cloche",
+      "group": {
+        "max_lenght": 50,
+        "name": "Packages",
+        "unique_code": "facf98b6c8124e0e9b18c1edd2021070"
+      },
+      "item_type": "packaging",
+      "max_lenght": 50,
+      "name": "Cloche",
+      "range": {
+        "conversion_factor": 1.0,
+        "max_lenght": 50,
+        "name": "gram",
+        "unique_code": "65baec6e3caf4841b3daa9b19a3718be"
+      },
+      "unique_code": "e7d7405a1abc4229bb2dde38039a18df"
+    }
+  ],
+  "warehouse": [
+    {
+      "address": "29 Lermontova St.",
+      "max_lenght": 50,
+      "name": "Main warehouse",
+      "unique_code": "12ba0f5f62c6409ba94d80ac86f7b819"
+    },
+    {
+      "address": "52 Krasnoarmeyskaya St.",
+      "max_lenght": 50,
+      "name": "Auxiliary warehouse",
+      "unique_code": "897bf00916154712b3377148b3e2982c"
+    }
+  ],
+  "recipes": [
+    {
+      "description": "1. Preparation. Wash the beef, pat dry, cut into 2–3 cm cubes. Boil the pasta in salted water until al dente, drain, reserving some cooking water. Wash the apples, core them, grate on a coarse grater. Peel the onion, dice finely.\n2. Searing the meat. Melt the butter in a deep frying pan. Add the beef, sear over high heat for 5–7 minutes until golden. Add the onion, cook for another 3–4 minutes until translucent.\n3. Stewing. Pour in half of the milk, reduce the heat, cover with a lid. Stew for 40–50 minutes until the meat is tender, stirring occasionally.\n4. Milk-apple sauce. Add the grated apples and the remaining milk. Stir and stew for another 5–7 minutes — the sauce should thicken slightly. Season with salt and pepper to taste.\n5. Combining with pasta. Add the boiled pasta to the pan with the meat and sauce. Stir gently and warm everything together for 2–3 minutes.\n6. Serving. Place on a warmed plate, pour the sauce over the top, garnish with fresh herbs. Serve hot.",
+      "full_name": "Pasta with beef in milk-apple sauce",
+      "ingredients": {
+        "0": {
+          "brutto": 400.0,
+          "carbohydrates": 69.7,
+          "coef": 1.0,
+          "fats": 1.1,
+          "full_name": "Durum wheat pasta",
+          "item_type": "product",
+          "max_lenght": 50,
+          "name": "Durum wheat pasta",
+          "proteins": 10.4,
+          "unique_code": "22441e45dffd4208a4b18b0a71c23747"
+        },
+        "1": {
+          "brutto": 500.0,
+          "carbohydrates": 0.0,
+          "coef": 0.7,
+          "fats": 16.0,
+          "full_name": "Beef (prime grade)",
+          "item_type": "product",
+          "max_lenght": 50,
+          "name": "Beef (prime grade)",
+          "proteins": 18.6,
+          "unique_code": "98e907f964d540a0b8794b94508eb144"
+        },
+        "2": {
+          "brutto": 300.0,
+          "carbohydrates": 4.7,
+          "coef": 1.0,
+          "fats": 3.2,
+          "full_name": "Pasteurized milk 3.2%",
+          "item_type": "product",
+          "max_lenght": 50,
+          "name": "Pasteurized milk 3.2%",
+          "proteins": 2.9,
+          "unique_code": "624ba53861584184a6ed4a6feba53424"
+        },
+        "3": {
+          "brutto": 200.0,
+          "carbohydrates": 9.8,
+          "coef": 0.9,
+          "fats": 0.4,
+          "full_name": "Astrakhan apple",
+          "item_type": "product",
+          "max_lenght": 50,
+          "name": "Astrakhan apple",
+          "proteins": 0.4,
+          "unique_code": "3288504d8ab945139a57cabffe527f8a"
+        },
+        "4": {
+          "brutto": 100.0,
+          "carbohydrates": 10.4,
+          "coef": 0.9,
+          "fats": 0.0,
+          "full_name": "Onion",
+          "item_type": "product",
+          "max_lenght": 50,
+          "name": "Onion",
+          "proteins": 1.4,
+          "unique_code": "9b6e222133704e8899dea92700b585e9"
+        },
+        "5": {
+          "brutto": 30.0,
+          "carbohydrates": 0.8,
+          "coef": 1.0,
+          "fats": 82.5,
+          "full_name": "Butter",
+          "item_type": "product",
+          "max_lenght": 50,
+          "name": "Butter",
+          "proteins": 0.5,
+          "unique_code": "435e0dfb164849cd9fdcbeb304b986a6"
+        },
+        "6": {
+          "brutto": 5.0,
+          "carbohydrates": 0.0,
+          "coef": 1.0,
+          "fats": 0.0,
+          "full_name": "Salt",
+          "item_type": "product",
+          "max_lenght": 50,
+          "name": "Salt",
+          "proteins": 0.0,
+          "unique_code": "ebba14f6ee29458cac1eca38568f5c63"
+        },
+        "7": {
+          "brutto": 2.0,
+          "carbohydrates": 0.0,
+          "coef": 1.0,
+          "fats": 0.0,
+          "full_name": "Ground black pepper",
+          "item_type": "product",
+          "max_lenght": 50,
+          "name": "Ground black pepper",
+          "proteins": 0.0,
+          "unique_code": "8f6625c664cd4ba8b3b34445cab45bf3"
+        }
+      },
+      "max_lenght": 50,
+      "name": "Pasta with beef in milk-apple sauce",
+      "preparation_method": {
+        "Durum wheat pasta": {
+          "value": "boil"
+        },
+        "Beef (prime grade)": {
+          "value": "fry"
+        },
+        "Pasteurized milk 3.2%": {
+          "value": "boil"
+        },
+        "Astrakhan apple": {
+          "value": "stew"
+        },
+        "Onion": {
+          "value": "fry"
+        },
+        "Butter": {
+          "value": "fry"
+        }
+      },
+      "time": "1 hour 20 minutes",
+      "unique_code": "c7570041857f4dd68380a5517fb3f7e1",
+      "with_package": false,
+      "with_pf": false
+    }
+  ]
+}

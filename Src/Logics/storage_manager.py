@@ -3,6 +3,7 @@ import json
 from Src.Core.abstract_manager import abstract_manager
 from Src.Core.exception import arguments_exeption
 from Src.Core.ingredient_types import ingredient_type
+from Src.Logics.convert_factory import convert_factory
 from Src.Logics.settings_manager import settings_manager
 from Src.Models.group_model import group_model
 from Src.Models.ingredient_model import ingredient_model
@@ -10,6 +11,7 @@ from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
 from Src.Models.technicalmap_model import technicalmap_model
 from Src.Models.warehouse_model import warehouse_model
+from Src.Core.abstract_convertor import abstract_convertor
 
 
 class storage_manager(abstract_manager):
@@ -86,7 +88,53 @@ class storage_manager(abstract_manager):
 
         self._is_loaded = self.convert()
 
-    # --- Конвертеры секций JSON ---
+
+    def save(self, file_name: str = "") -> bool:
+        """Сохраняет «сырые» данные self._data обратно в JSON-файл.
+
+        :param file_name: Путь к файлу. Если пусто — storage_data.json.
+        :return: True, если запись прошла успешно, иначе False.
+        """
+        inner_file_name = file_name if file_name != "" else self.__default_data_file
+        if not self._data:
+            return False
+        try:
+            with open(inner_file_name, "w", encoding="utf-8") as file:
+                json.dump(self._data, file, ensure_ascii=False, indent=2)
+            return True
+        except OSError:
+            return False
+
+    def save_models(self, file_name: str = "") -> bool:
+        """Сохраняет текущие доменные модели в JSON-файл.
+
+        Собирает секции groups/ranges/nomenclature/warehouse/recipes
+        из списков моделей и сериализует через convert_factory.
+
+        :param file_name: Путь к файлу. Если пусто — storage_data.json.
+        :return: True, если запись прошла успешно, иначе False.
+        """
+        inner_file_name = file_name if file_name != "" else self.__default_data_file
+        walker = convert_factory().create()
+
+        payload = {
+            "groups": [walker.convert(g) for g in self._groups],
+            "ranges": [walker.convert(r) for r in self._ranges],
+            "nomenclature": [walker.convert(n) for n in self._nomenclature],
+            "warehouse": [walker.convert(w) for w in self._warehouse],
+            "recipes": [walker.convert(r) for r in self._recipes],
+        }
+
+        try:
+            data = json.loads(abstract_convertor.to_json(payload))
+
+            with open(inner_file_name, "w", encoding="utf-8") as file:
+                json.dump(data, file, ensure_ascii=False, indent=2)
+
+            self._data = data
+            return True
+        except OSError:
+            return False
 
     def _convert_ranges(self, data: list) -> None:
         """Преобразует список единиц измерения из JSON.
@@ -165,7 +213,7 @@ class storage_manager(abstract_manager):
                     name=item["name"],
                     group=gr,
                     range=rn,
-                    item_type=item.get("type", ""),
+                    item_type=item.get("item_type", item.get("type", "")),
                 )
             )
 
@@ -206,7 +254,7 @@ class storage_manager(abstract_manager):
                     fats=ing["fats"],
                     carbohydrates=ing["carbohydrates"],
                     coef=ing.get("coef", 1.0),
-                    item_type=ing.get("type", ingredient_type.PRODUCT),
+                    item_type=ing.get("item_type", ing.get("type", ingredient_type.PRODUCT)),
                 )
                 for ing in item.get("ingredients", [])
             ]
@@ -269,9 +317,10 @@ class storage_manager(abstract_manager):
         self._is_loaded = self.convert()
 
         manager.settings.first_launch_flag = False
+        manager.save()
+
         return self._is_loaded
 
-    # --- Свойства доступа к справочникам ---
 
     @property
     def groups(self) -> list:
@@ -298,7 +347,6 @@ class storage_manager(abstract_manager):
         """Возвращает список технологических карт (рецептов)."""
         return self._recipes
 
-    # --- Добавление элементов ---
 
     @staticmethod
     def _is_unique(items: list, candidate) -> bool:
