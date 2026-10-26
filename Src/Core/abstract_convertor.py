@@ -1,19 +1,17 @@
 import json
 from abc import ABC, abstractmethod
 
-from Src.Core.json_convertor_factory import json_convertor_factory
-
-# Явная регистрация стандартных обработчиков (идемпотентна).
-json_convertor_factory.create_default()
+from Src.Logics.json_convertor_factory import json_convertor_factory
 
 
 class abstract_convertor(ABC):
     """Абстрактный конвертер объекта в JSON-совместимый словарь."""
 
+    _json_convertor = json_convertor_factory().create()
+
     @abstractmethod
     def convert(self, source: object) -> dict:
-        """Возвращает словарь, пригодный для json.dumps."""
-        pass
+        ...
 
     @staticmethod
     def _public(source: object) -> list:
@@ -30,12 +28,8 @@ class abstract_convertor(ABC):
     @staticmethod
     def _to_json(value):
         """Приводит значение к JSON-сериализуемому виду.
-
-        Делегирует разбор типов фабрике json_convertor_factory.
-        Новые типы регистрируются через register() без правки
-        этого метода.
         """
-        return json_convertor_factory.convert(value, abstract_convertor._to_json)
+        return abstract_convertor._json_convertor.convert(value)
 
     @classmethod
     def to_json(cls, data: dict) -> str:

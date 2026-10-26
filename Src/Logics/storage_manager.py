@@ -11,6 +11,7 @@ from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
 from Src.Models.technicalmap_model import technicalmap_model
 from Src.Models.warehouse_model import warehouse_model
+from Src.Core.abstract_convertor import abstract_convertor
 
 
 class storage_manager(abstract_manager):
@@ -114,18 +115,18 @@ class storage_manager(abstract_manager):
         :return: True, если запись прошла успешно, иначе False.
         """
         inner_file_name = file_name if file_name != "" else self.__default_data_file
-        factory = convert_factory.create_default()
+        walker = convert_factory().create()
 
         payload = {
-            "groups": [factory.convert(g) for g in self._groups],
-            "ranges": [factory.convert(r) for r in self._ranges],
-            "nomenclature": [factory.convert(n) for n in self._nomenclature],
-            "warehouse": [factory.convert(w) for w in self._warehouse],
-            "recipes": [factory.convert(r) for r in self._recipes],
+            "groups": [walker.convert(g) for g in self._groups],
+            "ranges": [walker.convert(r) for r in self._ranges],
+            "nomenclature": [walker.convert(n) for n in self._nomenclature],
+            "warehouse": [walker.convert(w) for w in self._warehouse],
+            "recipes": [walker.convert(r) for r in self._recipes],
         }
 
         try:
-            data = json.loads(convert_factory.to_json(payload))
+            data = json.loads(abstract_convertor.to_json(payload))
 
             with open(inner_file_name, "w", encoding="utf-8") as file:
                 json.dump(data, file, ensure_ascii=False, indent=2)
@@ -212,7 +213,7 @@ class storage_manager(abstract_manager):
                     name=item["name"],
                     group=gr,
                     range=rn,
-                    item_type=item.get("type", ""),
+                    item_type=item.get("item_type", item.get("type", "")),
                 )
             )
 
@@ -253,7 +254,7 @@ class storage_manager(abstract_manager):
                     fats=ing["fats"],
                     carbohydrates=ing["carbohydrates"],
                     coef=ing.get("coef", 1.0),
-                    item_type=ing.get("type", ingredient_type.PRODUCT),
+                    item_type=ing.get("item_type", ing.get("type", ingredient_type.PRODUCT)),
                 )
                 for ing in item.get("ingredients", [])
             ]

@@ -5,6 +5,7 @@ from Src.Logics.convert_factory import convert_factory
 from Src.Models.settings_model import settings_model
 from Src.Models.organization_model import organization_model
 from Src.Core.validator import validator
+from Src.Core.abstract_convertor import abstract_convertor
 
 
 class settings_manager(abstract_manager):
@@ -71,15 +72,13 @@ class settings_manager(abstract_manager):
         """
         inner_file_name = file_name if file_name != "" else self.__default_file_name
         try:
-            factory = convert_factory.create_default()
-            payload = factory.convert(self._settings)
-            data = json.loads(convert_factory.to_json(payload))
+            walker = convert_factory().create()
+            payload = walker.convert(self._settings)
+            data = json.loads(abstract_convertor.to_json(payload))
 
             with open(inner_file_name, "w", encoding="utf-8") as file:
                 json.dump(data, file, ensure_ascii=False, indent=2)
 
-            # Синхронизируем «сырые» данные, чтобы save() потом
-            # записал актуальное состояние.
             self._data = data
             return True
         except OSError:

@@ -46,7 +46,7 @@ def test_valid_result_factory_basic_primitive():
     Ожидаемый результат: словарь {"value": <число>}.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     value = 42
 
     # Действие
@@ -62,7 +62,7 @@ def test_valid_result_factory_string_primitive():
     Ожидаемый результат: словарь {"value": <строка>}.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     value = "hello"
 
     # Действие
@@ -78,7 +78,7 @@ def test_valid_result_factory_datetime_primitive():
     Ожидаемый результат: словарь {"value": "<ISO-строка>"}.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     value = datetime(2024, 5, 17, 12, 30)
 
     # Действие
@@ -94,7 +94,7 @@ def test_valid_result_factory_date_primitive():
     Ожидаемый результат: словарь {"value": "<ISO-строка>"}.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     value = date(2024, 5, 17)
 
     # Действие
@@ -110,7 +110,7 @@ def test_valid_result_factory_reference_model():
     Ожидаемый результат: компактное описание {unique_code, type, name}.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     group = group_model.create(name="Dairy products")
 
     # Действие
@@ -119,7 +119,7 @@ def test_valid_result_factory_reference_model():
     # Проверки
     assert result["name"] == "Dairy products"
     assert result["unique_code"] == group.unique_code
-    assert result["item_type"] == ""
+    assert "item_type" not in result
     assert "max_lenght" in result
 
 
@@ -130,7 +130,7 @@ def test_valid_result_factory_nomenclature():
     group/range — компактные описания.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     nom = nomenclature_model.create(
         full_name="Pasteurized milk 3.2%",
         name="Milk",
@@ -153,13 +153,14 @@ def test_valid_result_factory_nomenclature():
     assert result["range"]["base"]["name"] == "Milliliter"
     assert "base" not in result["range"]["base"]
 
+
 def test_valid_result_factory_skips_none():
     """
     Проверяет, что поля со значением None не попадают в результат.
     Ожидаемый результат: у грамма нет ключа "base".
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     gram = range_model.create_gram()
 
     # Действие
@@ -176,7 +177,7 @@ def test_valid_result_factory_list():
     Ожидаемый результат: ключи-индексы "0", "1", "2".
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     source = [10, "two", 3.0]
 
     # Действие
@@ -196,7 +197,7 @@ def test_valid_result_factory_dict():
     Ожидаемый результат: ключи сохранены, значения разобраны.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     source = {"a": 1, "b": "x"}
 
     # Действие
@@ -212,7 +213,7 @@ def test_valid_result_factory_list_of_models():
     Ожидаемый результат: каждый элемент — компактное описание.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     source = [
         group_model.create(name="Dairy"),
         group_model.create(name="Meat"),
@@ -232,7 +233,7 @@ def test_valid_result_factory_composite():
     Ожидаемый результат: все три вида полей в одном словаре.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     source = _make_composite()
 
     # Действие
@@ -254,7 +255,7 @@ def test_valid_result_factory_nested_list_of_models():
     каждый элемент — компактное описание.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
 
     class WithList:
         @property
@@ -281,15 +282,14 @@ def test_valid_result_factory_cycle_protection():
     повторная модель отдаётся компактным описанием.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     gram = range_model.create_gram()
-    gram.base = gram   # патологический цикл: base → сам себя
+    gram.base = gram
 
     # Действие
     result = factory.convert(gram)
 
     # Проверки
-    # Главное — не зависли. base описан компактно.
     assert result["name"] == "Gram"
     assert "base" in result
 
@@ -300,7 +300,7 @@ def test_valid_result_factory_chain_not_cycle():
     Ожидаемый результат: цепочка раскрывается, base — компактное описание.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     gram = range_model.create_gram()
     kg = range_model.create_kilogram(base=gram)
     tonna = range_model.create_tonna(base=kg)
@@ -310,7 +310,6 @@ def test_valid_result_factory_chain_not_cycle():
 
     # Проверки
     assert result["name"] == "Tonna"
-    # base — ссылка, отдаётся компактным описанием, не раскрывается.
     assert result["base"]["name"] == "Kilogram"
 
 
@@ -320,11 +319,11 @@ def test_valid_result_factory_to_json_roundtrip():
     Ожидаемый результат: json.loads(to_json(data)) == data.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     data = factory.convert(_make_composite())
 
     # Действие
-    text = factory.to_json(data)
+    text = json.dumps(data, ensure_ascii=False)
     parsed = json.loads(text)
 
     # Проверки
@@ -339,7 +338,7 @@ def test_valid_result_factory_to_json_nomenclature():
     Ожидаемый результат: json.loads не падает, ссылки сохранены.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     nom = nomenclature_model.create(
         full_name="Milk",
         name="Milk",
@@ -349,7 +348,7 @@ def test_valid_result_factory_to_json_nomenclature():
     )
 
     # Действие
-    text = factory.to_json(factory.convert(nom))
+    text = json.dumps(factory.convert(nom), ensure_ascii=False)
     parsed = json.loads(text)
 
     # Проверки
@@ -364,11 +363,11 @@ def test_valid_result_factory_to_json_list():
     Ожидаемый результат: JSON-объект с ключами-индексами.
     """
     # Подготовка
-    factory = convert_factory.create_default()
+    factory = convert_factory().create()
     data = factory.convert([1, "two", datetime(2024, 1, 1)])
 
     # Действие
-    text = factory.to_json(data)
+    text = json.dumps(data, ensure_ascii=False)
     parsed = json.loads(text)
 
     # Проверки

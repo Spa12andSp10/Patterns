@@ -44,14 +44,14 @@
       "full_name": "Pasteurized milk 3.2%",
       "group": "Dairy products",
       "range": "liter",
-      "type": "product"
+      "item_type": "product"
     },
     {
       "name": "Apple",
       "full_name": "Astrakhan apple",
       "group": "Vegetables, fruit",
       "range": "kilogram",
-      "type": "product"
+      "item_type": "product"
     },
     {
       "name": "Pasta",
@@ -65,14 +65,14 @@
       "full_name": "Beef (top grade)",
       "group": "Meat products",
       "range": "kilogram",
-      "type": "product"
+      "item_type": "product"
     },
     {
       "name": "Cloche",
       "full_name": "Aluminum cloche",
       "group": "Packages",
       "range": "gram",
-      "type": "packaging"
+      "item_type": "packaging"
     }
   ],
   "warehouse": [
@@ -98,7 +98,7 @@
           "fats": 1.1,
           "carbohydrates": 69.7,
           "coef": 1.0,
-          "type": "product"
+          "item_type": "product"
         },
         {
           "full_name": "Beef (prime grade)",
@@ -107,7 +107,7 @@
           "fats": 16.0,
           "carbohydrates": 0.0,
           "coef": 0.7,
-          "type": "product"
+          "item_type": "product"
         },
         {
           "full_name": "Pasteurized milk 3.2%",
@@ -116,7 +116,7 @@
           "fats": 3.2,
           "carbohydrates": 4.7,
           "coef": 1.0,
-          "type": "product"
+          "item_type": "product"
         },
         {
           "full_name": "Astrakhan apple",
@@ -125,7 +125,7 @@
           "fats": 0.4,
           "carbohydrates": 9.8,
           "coef": 0.9,
-          "type": "product"
+          "item_type": "product"
         },
         {
           "full_name": "Onion",
@@ -134,7 +134,7 @@
           "fats": 0.0,
           "carbohydrates": 10.4,
           "coef": 0.9,
-          "type": "product"
+          "item_type": "product"
         },
         {
           "full_name": "Butter",
@@ -143,7 +143,7 @@
           "fats": 82.5,
           "carbohydrates": 0.8,
           "coef": 1.0,
-          "type": "product"
+          "item_type": "product"
         },
         {
           "full_name": "Salt",
@@ -152,7 +152,7 @@
           "fats": 0.0,
           "carbohydrates": 0.0,
           "coef": 1.0,
-          "type": "product"
+          "item_type": "product"
         },
         {
           "full_name": "Ground black pepper",
@@ -161,7 +161,7 @@
           "fats": 0.0,
           "carbohydrates": 0.0,
           "coef": 1.0,
-          "type": "product"
+          "item_type": "product"
         }
       ],
       "preparation_method": {
