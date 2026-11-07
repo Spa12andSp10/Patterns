@@ -12,7 +12,7 @@ class range_from_json(abstract_deserialization_convertor_factory):
     База (base) разрешается рекурсивно через convert: если объект
     с таким unique_code уже есть в model_repository, возвращается
     существующий — это разрешает повторные ссылки и цепочки
-    единиц измерения (tonna → kilogram → gram) без дубликатов.
+    единиц измерения без дубликатов.
     """
 
     def __init__(self, repository: model_repository):
