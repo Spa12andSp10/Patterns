@@ -419,6 +419,13 @@ class storage_manager(abstract_manager):
             return True
         return False
 
+    def add_ingredient(self, value: ingredient_model) -> bool:
+        """Добавляет ингредиент, если его ещё нет (по имени)."""
+        if self._is_unique(self._ingredients, value):
+            self._ingredients.append(value)
+            return True
+        return False
+
     def load_default_ranges(self) -> None:
         """Наполняет справочник единиц эталонными значениями.
 

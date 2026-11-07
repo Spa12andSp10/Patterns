@@ -99,3 +99,27 @@ class validation_exeption(base_exception):
         :param stack_trace: Трассировка стека (при наличии).
         """
         super().__init__(field, message, stack_trace)
+
+class file_exeption(base_exception):
+    """Исключение о ненайденном файле"""
+    def __init__(self, field: str, document: str, stack_trace = ""):
+        """Инициализирует исключение.
+
+        :param field: Имя поля, в котором произошла ошибка.
+        :param document: Название файла.
+        :param stack_trace: Трассировка стека (при наличии).
+        """
+        message = f"Файл {document} не найден!" 
+        super().__init__(field, message, stack_trace)
+
+class empty_file_exeption(base_exception):
+
+    def __init__(self, field: str, document: str, stack_trace = ""):
+        """Инициализирует исключение.
+
+        :param field: Имя поля, в котором произошла ошибка.
+        :param document: Название файла.
+        :param stack_trace: Трассировка стека (при наличии).
+        """
+        message = f"Файл {document} пустой" 
+        super().__init__(field, message, stack_trace)

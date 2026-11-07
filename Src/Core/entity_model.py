@@ -32,3 +32,7 @@ class entity_model(abstract_model):
     def max_lenght(self) -> int:
         """Возвращает максимально допустимую длину наименования."""
         return self.__max_length
+
+    @max_lenght.setter
+    def max_lenght(self, value: int) -> None:
+        validator.validate(value, int, "max_lenght")
