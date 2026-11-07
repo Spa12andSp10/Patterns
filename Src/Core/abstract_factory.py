@@ -14,9 +14,5 @@ class abstract_factory(ABC):
     @abstractmethod
     def create(report_type: report_type_enum) -> abstract_report:
         """Создаёт экземпляр отчета указанного типа.
-
-        :param report_type: Тип отчета (TXT, CSV, HTML и т.д.).
-        :return: Экземпляр класса отчета.
-        :raises ValueError: Если тип отчета неизвестен.
         """
         pass

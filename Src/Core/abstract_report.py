@@ -13,9 +13,5 @@ class abstract_report(ABC):
     """
     @abstractmethod
     def build(self, source: abstract_model) -> report_result_dto:
-        """Формирует отчет на основе переданного источника данных.
-
-        :param source: Доменная модель (рецепт, номенклатура, единица измерения).
-        :return: Объект DTO с текстовым или бинарным результатом.
-        """
+        """Формирует отчет на основе переданного источника данных."""
         pass
