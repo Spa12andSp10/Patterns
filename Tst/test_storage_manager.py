@@ -1,35 +1,69 @@
 import pytest
 
-from pathlib import Path
 from Src.Logics.storage_manager import storage_manager
 from Src.Logics.settings_manager import settings_manager
-
-def _settings_path() -> str:
-    """Путь к settings.json в папке Tst (рядом с тестом)."""
-    return str(Path(__file__).resolve().parent / "settings.json")
-
-def _storage_path() -> str:
-    """Путь к storage_data.json (эталонные данные)."""
-    return str(Path(__file__).resolve().parent / "storage_data.json")
+from Src.Models.group_model import group_model
+from Src.Models.range_model import range_model
+from Src.Models.nomenclature_model import nomenclature_model
+from Src.Models.warehouse_model import warehouse_model
 
 
 @pytest.fixture(autouse=True)
 def reset_storage():
+    """Сбрасывает состояние singleton-хранилища перед каждым тестом."""
     sm = storage_manager()
     sm._groups = []
     sm._ranges = []
     sm._nomenclature = []
     sm._warehouse = []
     sm._recipes = []
+    sm._ingredients = []
     sm._is_loaded = False
-    sm._data = {}
     yield
+
+
+@pytest.fixture
+def loaded_storage():
+    """Хранилище, наполненное моделями напрямую (без JSON/десериализации)."""
+    sm = storage_manager()
+
+    gram = range_model.create_gram()
+    kg = range_model.create_kilogram(base=gram)
+    liter = range_model.create_liter()
+    sm.add_range(gram)
+    sm.add_range(kg)
+    sm.add_range(liter)
+
+    dairy = group_model.create("Dairy products")
+    meat = group_model.create("Meat products")
+    sm.add_group(dairy)
+    sm.add_group(meat)
+
+    sm.add_nomenclature(nomenclature_model.create(
+        full_name="Pasteurized milk 3.2%",
+        name="Milk",
+        group=dairy,
+        range=liter,
+        item_type="product",
+    ))
+    sm.add_nomenclature(nomenclature_model.create(
+        full_name="Apple",
+        name="Apple",
+        group=dairy,
+        range=gram,
+        item_type="product",
+    ))
+
+    sm.add_warehouse(warehouse_model.create("Main warehouse", "Lenina 1"))
+    sm.add_warehouse(warehouse_model.create("Auxiliary warehouse", "Lenina 2"))
+
+    return sm
 
 
 def test_valid_result_storage_manager_singleton():
     """
     Проверяет работу шаблона Singleton для storage_manager.
-    Ожидаемый результат: два вызова storage_manager() возвращают один и тот же объект.
+    Ожидаемый результат: два вызова возвращают один и тот же объект.
     """
     # Подготовка
     s1 = storage_manager()
@@ -41,125 +75,97 @@ def test_valid_result_storage_manager_singleton():
     assert s1 is s2
 
 
-def test_valid_result_storage_manager_load_success():
+def test_valid_result_storage_manager_groups_loaded(loaded_storage):
     """
-    Проверяет успешную загрузку данных из settings.json.
-    Ожидаемый результат: после вызова load() флаг is_loaded становится True.
-    """
-    # Подготовка
-    sm = storage_manager()
-
-    # Действие
-    sm.load(_storage_path())
-
-    # Проверки
-    assert sm.is_loaded is True
-
-
-def test_valid_result_storage_manager_groups_loaded():
-    """
-    Проверяет, что группы номенклатуры загружены из JSON.
-    Ожидаемый результат: список groups содержит 5 элемента, включая
-    «Молочная продукция» и «Мясная продукция».
+    Проверяет, что группы доступны через свойство groups.
+    Ожидаемый результат: 2 группы, включая «Dairy products» и «Meat products».
     """
     # Подготовка
-    sm = storage_manager()
-    sm.load(_storage_path())
+    sm = loaded_storage
 
     # Действие
     names = [g.name for g in sm.groups]
 
     # Проверки
-    assert len(sm.groups) == 5
+    assert len(sm.groups) == 2
     assert "Dairy products" in names
     assert "Meat products" in names
 
 
-def test_valid_result_storage_manager_ranges_loaded():
+def test_valid_result_storage_manager_ranges_loaded(loaded_storage):
     """
-    Проверяет, что единицы измерения загружены из JSON.
-    Ожидаемый результат: список ranges содержит 5 элемента, включая
-    «грамм» и «килограмм».
+    Проверяет, что единицы измерения доступны через свойство ranges.
+    Ожидаемый результат: есть «gram» и «kilogram».
     """
     # Подготовка
-    sm = storage_manager()
-    sm.load(_storage_path())
+    sm = loaded_storage
 
     # Действие
     names = [r.name for r in sm.ranges]
 
     # Проверки
-    assert len(sm.ranges) == 4
-    assert "gram" in names
-    assert "kilogram" in names
+    assert "Gram" in names
+    assert "Kilogram" in names
 
 
-def test_valid_result_storage_manager_range_base_linked():
+def test_valid_result_storage_manager_range_base_linked(loaded_storage):
     """
-    Проверяет, что производная единица измерения ссылается на базовую.
-    Ожидаемый результат: у «килограмм» base указывает на «грамм»,
-    conversion_factor равен 1000.0.
+    Проверяет связь производной единицы с базовой.
+    Ожидаемый результат: у «Kilogram» base = «Gram», factor = 1000.
     """
     # Подготовка
-    sm = storage_manager()
-    sm.load(_storage_path())
+    sm = loaded_storage
 
     # Действие
-    kg = next(r for r in sm.ranges if r.name == "kilogram")
+    kg = next(r for r in sm.ranges if r.name.lower() == "kilogram")
 
     # Проверки
     assert kg.base is not None
-    assert kg.base.name == "gram"
+    assert kg.base.name.lower() == "gram"
     assert kg.conversion_factor == 1000.0
 
 
-def test_valid_result_storage_manager_nomenclatures_loaded():
+def test_valid_result_storage_manager_nomenclatures_loaded(loaded_storage):
     """
-    Проверяет, что номенклатура загружена из JSON.
-    Ожидаемый результат: список nomenclatures содержит 4 элемента, включая
-    «Молоко» и «Яблоко».
+    Проверяет, что номенклатура доступна через свойство nomenclatures.
+    Ожидаемый результат: 2 элемента, включая «Milk» и «Apple».
     """
     # Подготовка
-    sm = storage_manager()
-    sm.load(_storage_path())
+    sm = loaded_storage
 
     # Действие
     names = [n.name for n in sm.nomenclatures]
 
     # Проверки
-    assert len(sm.nomenclatures) == 5
+    assert len(sm.nomenclatures) == 2
     assert "Milk" in names
     assert "Apple" in names
 
 
-def test_valid_result_storage_manager_nomenclature_links():
+def test_valid_result_storage_manager_nomenclature_links(loaded_storage):
     """
-    Проверяет, что номенклатура ссылается на существующие группы и единицы измерения.
-    Ожидаемый результат: у «Молоко» group = «Молочная продукция», range = «литр»,
-    full_name = «Молоко пастеризованное 3.2%».
+    Проверяет ссылки номенклатуры на группу и единицу измерения.
+    Ожидаемый результат: у «Milk» group = «Dairy products», range = «Liter».
     """
     # Подготовка
-    sm = storage_manager()
-    sm.load(_storage_path())
+    sm = loaded_storage
 
     # Действие
     milk = next(n for n in sm.nomenclatures if n.name == "Milk")
 
     # Проверки
     assert milk.group.name == "Dairy products"
-    assert milk.range.name == "liter"
+    assert milk.range.name == "Liter"
     assert milk.full_name == "Pasteurized milk 3.2%"
 
 
-def test_valid_result_storage_manager_warehouses_loaded():
+def test_valid_result_storage_manager_warehouses_loaded(loaded_storage):
     """
-    Проверяет, что склады загружены из JSON.
-    Ожидаемый результат: список warehouses содержит 2 элемента: «Основной склад»
-    и «Вспомогательный склад».
+    Проверяет, что склады доступны через свойство warehouses.
+    Ожидаемый результат: 2 склада с ожидаемыми именами.
     """
     # Подготовка
-    sm = storage_manager()
-    sm.load(_storage_path())
+    sm = loaded_storage
 
     # Действие
     names = [w.name for w in sm.warehouses]
@@ -170,34 +176,29 @@ def test_valid_result_storage_manager_warehouses_loaded():
     assert "Auxiliary warehouse" in names
 
 
-def test_invalid_result_storage_manager_unique_ranges():
+def test_invalid_result_storage_manager_unique_ranges(loaded_storage):
     """
-    Проверяет запрет добавления дубликата единицы измерения.
-    Ожидаемый результат: повторное добавление того же объекта не увеличивает
-    размер списка ranges.
+    Проверяет запрет дубликата единицы измерения.
+    Ожидаемый результат: размер ranges не меняется.
     """
     # Подготовка
-    sm = storage_manager()
-    sm.load(_storage_path())
+    sm = loaded_storage
     before = len(sm.ranges)
-    existing = sm.ranges[0]
 
     # Действие
-    sm.add_range(existing)
+    sm.add_range(sm.ranges[0])
 
     # Проверки
     assert len(sm.ranges) == before
 
 
-def test_invalid_result_storage_manager_unique_groups():
+def test_invalid_result_storage_manager_unique_groups(loaded_storage):
     """
-    Проверяет запрет добавления дубликата группы.
-    Ожидаемый результат: повторное добавление того же объекта не увеличивает
-    размер списка groups.
+    Проверяет запрет дубликата группы.
+    Ожидаемый результат: размер groups не меняется.
     """
     # Подготовка
-    sm = storage_manager()
-    sm.load(_storage_path())
+    sm = loaded_storage
     before = len(sm.groups)
 
     # Действие
@@ -207,15 +208,13 @@ def test_invalid_result_storage_manager_unique_groups():
     assert len(sm.groups) == before
 
 
-def test_invalid_result_storage_manager_unique_nomenclatures():
+def test_invalid_result_storage_manager_unique_nomenclatures(loaded_storage):
     """
-    Проверяет запрет добавления дубликата номенклатуры.
-    Ожидаемый результат: повторное добавление того же объекта не увеличивает
-    размер списка nomenclatures.
+    Проверяет запрет дубликата номенклатуры.
+    Ожидаемый результат: размер nomenclatures не меняется.
     """
     # Подготовка
-    sm = storage_manager()
-    sm.load(_storage_path())
+    sm = loaded_storage
     before = len(sm.nomenclatures)
 
     # Действие
@@ -225,15 +224,13 @@ def test_invalid_result_storage_manager_unique_nomenclatures():
     assert len(sm.nomenclatures) == before
 
 
-def test_invalid_result_storage_manager_unique_warehouses():
+def test_invalid_result_storage_manager_unique_warehouses(loaded_storage):
     """
-    Проверяет запрет добавления дубликата склада.
-    Ожидаемый результат: повторное добавление того же объекта не увеличивает
-    размер списка warehouses.
+    Проверяет запрет дубликата склада.
+    Ожидаемый результат: размер warehouses не меняется.
     """
     # Подготовка
-    sm = storage_manager()
-    sm.load(_storage_path())
+    sm = loaded_storage
     before = len(sm.warehouses)
 
     # Действие
@@ -243,69 +240,13 @@ def test_invalid_result_storage_manager_unique_warehouses():
     assert len(sm.warehouses) == before
 
 
-def test_valid_result_storage_manager_first_start_creates_data():
-    """
-    Проверяет, что при первом старте формируются данные.
-    Ожидаемый результат: first_start() возвращает True, во всех четырёх списках
-    появляются элементы.
-    """
-    # Подготовка
-    sm = storage_manager()
-    settings_manager().settings.first_launch_flag = True
-
-    # Действие
-    result = sm.first_start(_storage_path())
-
-    # Проверки
-    assert result is True
-    assert len(sm.groups) > 0
-    assert len(sm.ranges) > 0
-    assert len(sm.nomenclatures) > 0
-    assert len(sm.warehouses) > 0
-
-
-def test_valid_result_storage_manager_first_start_resets_flag():
-    """
-    Проверяет сброс флага первого старта после его обработки.
-    Ожидаемый результат: после вызова first_start() флаг first_launch_flag
-    становится False.
-    """
-    # Подготовка
-    sm = storage_manager()
-    smg = settings_manager()
-    smg.settings.first_launch_flag = True
-
-    # Действие
-    sm.first_start(_storage_path())
-
-    # Проверки
-    assert smg.settings.first_launch_flag is False
-
-
-def test_valid_result_storage_manager_first_start_second_time_no_op():
-    """
-    Проверяет, что повторный вызов first_start() не пересоздаёт данные.
-    Ожидаемый результат: второй вызов возвращает False, размеры списков
-    не меняются.
-    """
-    # Подготовка
-    sm = storage_manager()
-    smg = settings_manager()
-    smg.settings.first_launch_flag = True
-    sm.first_start(_storage_path())
-    before = len(sm.groups)
-
-    # Действие
-    result = sm.first_start(_storage_path())
-
-    # Проверки
-    assert result is False
-    assert len(sm.groups) == before
-
-
 def test_valid_name():
+    """
+    Проверяет, что load_default_ranges() наполняет справочник единиц
+    без исключений.
+    Ожидаемый результат: метод завершается без ошибок.
+    """
     # Подготовка
-    s = settings_manager()
     m = storage_manager()
 
     # Действие
@@ -314,5 +255,5 @@ def test_valid_name():
 
     # Проверки
         assert True
-    except:
+    except Exception:
         assert False

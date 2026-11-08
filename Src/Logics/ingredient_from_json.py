@@ -1,24 +1,24 @@
 from Src.Core.abstract_deserialization_convertor_factory import abstract_deserialization_convertor_factory
-from Src.Core.validator import validator
+from Src.Core.entity_type import entity_type
 from Src.Core.exception import arguments_exeption
-from Src.Models.ingredient_model import ingredient_model
+from Src.Core.validator import validator
 from Src.Logics.model_repository import model_repository
+from Src.Models.ingredient_model import ingredient_model
 
 
 class ingredient_from_json(abstract_deserialization_convertor_factory):
+    """Конвертер dict -> ingredient_model."""
 
-    """Конвертер dict -> ingredient_model.
+    entity = entity_type.INGREDIENT
 
-    Создаёт ingredient_model по unique_code/full_name/brutto/proteins/fats
-     /carbohydrates/coef/item_type из JSON.
-    Если объект с таким unique_code уже есть в model_repository —
-    возвращает существующий (кэш для разрешения повторных ссылок).
-    """
+    @classmethod
+    def create(cls, repository: model_repository) -> "ingredient_from_json":
+        return cls(repository)
 
     def __init__(self, repository: model_repository) -> None:
         self._repository = repository
 
-    def convert(self, source: dict) -> ingredient_model:
+    def deserialize(self, source: dict) -> ingredient_model:
         validator.validate(source, dict, "source")
 
         unique_code = source.get("unique_code")
@@ -41,7 +41,11 @@ class ingredient_from_json(abstract_deserialization_convertor_factory):
 
         item_type = source.get("item_type")
 
-        model = ingredient_model.create(full_name=full_name,brutto=brutto,proteins=proteins,fats=fats,carbohydrates=carbohydrates,coef=coef,item_type=item_type)
+        model = ingredient_model.create(
+            full_name=full_name, brutto=brutto, proteins=proteins,
+            fats=fats, carbohydrates=carbohydrates, coef=coef,
+            item_type=item_type,
+        )
         model.unique_code = unique_code
         return self._repository.put_in_cloud(model)
 

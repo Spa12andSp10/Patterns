@@ -1,29 +1,32 @@
 from Src.Core.abstract_deserialization_convertor_factory import abstract_deserialization_convertor_factory
-from Src.Models.nomenclature_model import nomenclature_model
-from Src.Core.validator import validator
+from Src.Core.entity_type import entity_type
 from Src.Core.exception import arguments_exeption
+from Src.Core.validator import validator
 from Src.Logics.model_repository import model_repository
-from Src.Logics.group_from_json import group_from_json
-from Src.Logics.range_from_json import range_from_json
+from Src.Models.nomenclature_model import nomenclature_model
 
 
 class nomenclature_from_json(abstract_deserialization_convertor_factory):
     """Конвертер dict -> nomenclature_model.
 
-    Создаёт nomenclature_model по полям unique_code, full_name, name,
-    item_type, group, range. Вложенные group и range разрешаются
-    через соответствующие конвертеры: если объект с таким unique_code
-    уже есть в model_repository, возвращается существующий —
-    это разрешает повторные ссылки при десериализации графа.
+    Вложенные group/range создаются через общую фабрику —
+    конвертер не знает о конкретных классах своих зависимостей.
     """
 
-    def __init__(self, repository: model_repository):
-        self._repository = repository
-        self._group_converter = group_from_json(repository)
-        self._range_converter = range_from_json(repository)
+    entity = entity_type.NOMENCLATURE
 
-    def convert(self, source: dict) -> nomenclature_model:
-        """Конвертор"""
+    @classmethod
+    def create(cls, repository: model_repository) -> "nomenclature_from_json":
+        return cls(repository)
+
+    def __init__(self, repository: model_repository):
+        from Src.Logics.deserialization_convertor_factory import deserialization_convertor_factory
+        self._repository = repository
+        factory = deserialization_convertor_factory(repository)
+        self._group_converter = factory.create(entity_type.GROUP)
+        self._range_converter = factory.create(entity_type.RANGE)
+
+    def deserialize(self, source: dict) -> nomenclature_model:
         validator.validate(source, dict, "source")
 
         unique_code = source.get("unique_code")
@@ -45,12 +48,12 @@ class nomenclature_from_json(abstract_deserialization_convertor_factory):
         group_data = source.get("group")
         if group_data is None:
             raise arguments_exeption("group", "Отсутствует group")
-        group = self._group_converter.convert(group_data)
+        group = self._group_converter.deserialize(group_data)
 
         range_data = source.get("range")
         if range_data is None:
             raise arguments_exeption("range", "Отсутствует range")
-        range_ = self._range_converter.convert(range_data)
+        range_ = self._range_converter.deserialize(range_data)
 
         model = nomenclature_model.create(
             full_name, name, group, range_, item_type,

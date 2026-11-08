@@ -8,6 +8,7 @@ from Src.Logics.convert_factory import convert_factory
 from Src.Logics.deserialization import deserialization
 from Src.Logics.storage_manager import storage_manager
 from Src.Logics.settings_manager import settings_manager
+from Src.Logics.storage_bootstrap import storage_bootstrap
 
 
 SERIALIZED_FILE = "serialized_storage.json"
@@ -18,6 +19,20 @@ def _tst_path(name: str) -> str:
     return str(Path(__file__).resolve().parent / name)
 
 
+@pytest.fixture(autouse=True)
+def reset_storage():
+    """Сбрасывает состояние singleton-хранилища перед каждым тестом."""
+    sm = storage_manager()
+    sm._groups = []
+    sm._ranges = []
+    sm._nomenclature = []
+    sm._warehouse = []
+    sm._recipes = []
+    sm._ingredients = []
+    sm._is_loaded = False
+    yield
+
+
 @pytest.fixture
 def original_storage():
     """Хранилище с эталонными данными, загруженными из storage_data.json."""
@@ -25,13 +40,13 @@ def original_storage():
     settings_manager().settings.first_launch_flag = True
 
     storage = storage_manager()
-    storage.first_start(_tst_path("storage_data.json"))
+    storage_bootstrap(storage).first_start(_tst_path("storage_data.json"))
     return storage
 
 
 @pytest.fixture
 def serialized_json(original_storage):
-    """Эталон: JSON после сериализации моделей из хранилища.
+    """Эталон JSON после сериализации моделей из хранилища.
 
     Дополнительно сохраняет результат в Tst/serialized_storage.json,
     чтобы эталон можно было посмотреть глазами и переиспользовать.
@@ -61,6 +76,7 @@ def restored_storage(serialized_json):
     storage._warehouse.clear()
     storage._ranges.clear()
     storage._recipes.clear()
+    storage._ingredients.clear()
 
     deserialization(storage).deserialized(serialized_json)
     return storage
@@ -153,7 +169,7 @@ def test_valid_result_storage_recipes(original_storage, restored_storage):
 
 def test_valid_result_storage_group_model(original_storage, restored_storage):
     """
-    Проверяет, что конкретная группа после round-trip совпадает
+    Проверяет, что конкретная группа совпадает
     с исходной моделью по имени и уникальному коду.
     Ожидаемый результат: name и unique_code совпадают.
     """
@@ -172,7 +188,7 @@ def test_valid_result_storage_group_model(original_storage, restored_storage):
 
 def test_valid_result_storage_range_model(original_storage, restored_storage):
     """
-    Проверяет, что конкретная единица измерения после round-trip
+    Проверяет, что конкретная единица измерения
     совпадает с исходной моделью по имени и уникальному коду.
     Ожидаемый результат: name и unique_code совпадают.
     """
@@ -191,7 +207,7 @@ def test_valid_result_storage_range_model(original_storage, restored_storage):
 
 def test_valid_result_storage_nomenclature_model(original_storage, restored_storage):
     """
-    Проверяет, что конкретная номенклатура после round-trip
+    Проверяет, что конкретная номенклатура =
     совпадает с исходной моделью по имени и уникальному коду.
     Ожидаемый результат: name и unique_code совпадают.
     """
@@ -210,7 +226,7 @@ def test_valid_result_storage_nomenclature_model(original_storage, restored_stor
 
 def test_valid_result_storage_warehouse_model(original_storage, restored_storage):
     """
-    Проверяет, что конкретный склад после round-trip совпадает
+    Проверяет, что конкретный склад совпадает
     с исходной моделью по имени и уникальному коду.
     Ожидаемый результат: name и unique_code совпадают.
     """

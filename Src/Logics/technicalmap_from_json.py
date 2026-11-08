@@ -1,28 +1,30 @@
 from Src.Core.abstract_deserialization_convertor_factory import abstract_deserialization_convertor_factory
-from Src.Core.validator import validator
+from Src.Core.entity_type import entity_type
 from Src.Core.exception import arguments_exeption
-from Src.Models.technicalmap_model import technicalmap_model
+from Src.Core.validator import validator
 from Src.Logics.model_repository import model_repository
-from Src.Logics.ingredient_from_json import ingredient_from_json
+from Src.Models.technicalmap_model import technicalmap_model
 
 
 class technicalmap_from_json(abstract_deserialization_convertor_factory):
     """Конвертер dict -> technicalmap_model.
 
-    Создаёт technicalmap_model по полям unique_code, name, description,
-    time, ingredients, preparation_method. Вложенные ингредиенты
-    разрешаются через ingredient_from_json: если объект с таким
-    unique_code уже есть в model_repository, возвращается
-    существующий — это разрешает повторные ссылки при
-    десериализации графа.
+    Вложенные ингредиенты создаются через общую фабрику.
     """
 
-    def __init__(self, repository: model_repository) -> None:
-        self._repository = repository
-        self._ingredient_converter = ingredient_from_json(repository)
+    entity = entity_type.RECIPE
 
-    def convert(self, source: dict) -> technicalmap_model:
-        """Конвертор"""
+    @classmethod
+    def create(cls, repository: model_repository) -> "technicalmap_from_json":
+        return cls(repository)
+
+    def __init__(self, repository: model_repository) -> None:
+        from Src.Logics.deserialization_convertor_factory import  deserialization_convertor_factory
+        self._repository = repository
+        factory = deserialization_convertor_factory(repository)
+        self._ingredient_converter = factory.create(entity_type.INGREDIENT)
+
+    def deserialize(self, source: dict) -> technicalmap_model:
         validator.validate(source, dict, "source")
 
         unique_code = source.get("unique_code")
@@ -48,7 +50,7 @@ class technicalmap_from_json(abstract_deserialization_convertor_factory):
             raise arguments_exeption("ingredients", "Должен быть словарём")
 
         ingredient = [
-            self._ingredient_converter.convert(i)
+            self._ingredient_converter.deserialize(i)
             for i in ingredient_data.values()
         ]
 

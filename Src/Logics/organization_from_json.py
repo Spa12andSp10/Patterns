@@ -1,25 +1,24 @@
 from Src.Core.abstract_deserialization_convertor_factory import abstract_deserialization_convertor_factory
-from Src.Models.organization_model import organization_model
-from Src.Core.validator import validator
+from Src.Core.entity_type import entity_type
 from Src.Core.exception import arguments_exeption
+from Src.Core.validator import validator
 from Src.Logics.model_repository import model_repository
+from Src.Models.organization_model import organization_model
 
 
 class organization_from_json(abstract_deserialization_convertor_factory):
-    """Конвертер dict -> organization_model.
+    """Конвертер dict -> organization_model."""
 
-    Создаёт organization_model по полям unique_code, name, inn, bic,
-    account, owner. Контрольные суммы ИНН и счёта проверяются
-    валидатором. Если объект с таким unique_code уже есть
-    в model_repository, возвращает существующий — это разрешает
-    повторные ссылки при десериализации модельного графа.
-    """
+    entity = entity_type.ORGANIZATION
+
+    @classmethod
+    def create(cls, repository: model_repository) -> "organization_from_json":
+        return cls(repository)
 
     def __init__(self, repository: model_repository):
         self._repository = repository
 
-    def convert(self, source: dict) -> organization_model:
-        """Конвертор"""
+    def deserialize(self, source: dict) -> organization_model:
         validator.validate(source, dict, "source")
 
         unique_code = source.get("unique_code")

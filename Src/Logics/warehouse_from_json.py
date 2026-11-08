@@ -1,24 +1,24 @@
 from Src.Core.abstract_deserialization_convertor_factory import abstract_deserialization_convertor_factory
-from Src.Models.warehouse_model import warehouse_model
-from Src.Core.validator import validator
+from Src.Core.entity_type import entity_type
 from Src.Core.exception import arguments_exeption
+from Src.Core.validator import validator
 from Src.Logics.model_repository import model_repository
+from Src.Models.warehouse_model import warehouse_model
 
 
 class warehouse_from_json(abstract_deserialization_convertor_factory):
-    """Конвертер dict ->< warehouse_model.
+    """Конвертер dict -> warehouse_model."""
 
-    Создаёт warehouse_model по полям unique_code, name, address.
-    Если объект с таким unique_code уже есть в model_repository,
-    возвращает существующий — это разрешает повторные ссылки
-    при десериализации модельного графа.
-    """
+    entity = entity_type.WAREHOUSE
+
+    @classmethod
+    def create(cls, repository: model_repository) -> "warehouse_from_json":
+        return cls(repository)
 
     def __init__(self, repository: model_repository):
         self._repository = repository
 
-    def convert(self, source: dict) -> warehouse_model:
-        """Конвертор"""
+    def deserialize(self, source: dict) -> warehouse_model:
         validator.validate(source, dict, "source")
 
         unique_code = source.get("unique_code")
