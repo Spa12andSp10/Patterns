@@ -107,3 +107,7 @@ class range_model(entity_model):
                                      "Некорректно переданный аргумент")
         validator.no_lower_that_zero_validate(value, "conversion_factor")
         self.__conversion_factor = float(value)
+
+    @classmethod
+    def required_keys(cls) -> frozenset:
+        return frozenset({"name", "conversion_factor"})

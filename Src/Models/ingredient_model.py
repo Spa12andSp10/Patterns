@@ -228,3 +228,7 @@ class ingredient_model(nomenclature_model, nutrition_component):
                 f"Ожидается один из {self.NUTRIENTS}"
             )
         return getattr(self, nutrient)
+
+    @classmethod
+    def required_keys(cls) -> frozenset:
+        return frozenset({"full_name", "brutto", "proteins", "fats", "carbohydrates"})

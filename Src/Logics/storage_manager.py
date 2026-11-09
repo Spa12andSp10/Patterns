@@ -55,7 +55,6 @@ class storage_manager(abstract_manager):
     def ingredients(self) -> list:
         return self._ingredients
 
-
     @staticmethod
     def _is_unique(items: list, candidate) -> bool:
         name = getattr(candidate, "name", None)
@@ -100,7 +99,6 @@ class storage_manager(abstract_manager):
             return True
         return False
 
-
     def load_default_ranges(self) -> None:
         gram = range_model.create_gram()
         self.add_range(gram)
@@ -110,3 +108,6 @@ class storage_manager(abstract_manager):
 
         tonna = range_model.create_tonna(base=kilogram)
         self.add_range(tonna)
+
+
+

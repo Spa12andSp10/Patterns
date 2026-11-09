@@ -56,3 +56,13 @@ class abstract_model(ABC):
         if not isinstance(value, abstract_model):
             return False
         return self.unique_code == value.unique_code
+
+    @classmethod
+    def required_keys(cls) -> frozenset:
+        """Ключи, обязательные для сборки модели из dict."""
+        return frozenset()
+
+    @classmethod
+    def entity_type(cls) -> str:
+        """Тип сущности (для регистрации)."""
+        return ""

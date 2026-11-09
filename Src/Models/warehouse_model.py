@@ -48,3 +48,7 @@ class warehouse_model(entity_model):
         """
         validator.validate(value, str, "address", max_len=self.__max_len_address)
         self.__address = value
+
+    @classmethod
+    def required_keys(cls) -> frozenset:
+        return frozenset({"name", "address"})
