@@ -3,7 +3,11 @@ from Src.Core.exception import (
     max_length_exeption,
     length_exeption,
     validation_exeption,
+    file_exeption,
+    empty_file_exeption,
 )
+
+import os
 
 
 class validator:
@@ -142,3 +146,26 @@ class validator:
         """
         if not isinstance(data, dict):
             raise arguments_exeption(field, "Должен быть объектом (словарём)")
+
+    @staticmethod
+    def file_not_exist(data, field="data"):
+        """Проверяет, что файл существует.
+
+        :param data: Проверяемое имя файла
+        :param field: Имя поле сообщения об ошибке
+        :raises file_exeption: Имя поле сообщения об ошибке
+        """
+        if not os.path.exists(data):
+            raise file_exeption(field, data)
+
+    @staticmethod
+    def empty_file(data, field="data"):
+        """Проверяет, что файл не пустой
+        
+        :param data: Проверяемое имя файла
+        :param field: Имя поле сообщения об ошибке
+        :raises emptu_file_exeption: Если файл пустой.
+        """
+
+        if os.path.getsize(data) == 0:
+            raise empty_file_exeption(field, data)

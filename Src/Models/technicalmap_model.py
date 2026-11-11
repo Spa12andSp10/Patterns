@@ -362,3 +362,7 @@ class technicalmap_model(entity_model, nutrition_component):
         ]
         self.refresh_flags()
         return len(self.__ingredients) != before
+
+    @classmethod
+    def required_keys(cls) -> frozenset:
+        return frozenset({"name", "description", "time", "preparation_method"})

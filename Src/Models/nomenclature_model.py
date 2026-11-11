@@ -95,3 +95,7 @@ class nomenclature_model(entity_model):
         if value is not None and not isinstance(value, range_model):
             raise arguments_exeption("range", "Некорректно переданный аргумент")
         self.__range = value
+
+    @classmethod
+    def required_keys(cls) -> frozenset:
+        return frozenset({"full_name", "name", "group", "range"})

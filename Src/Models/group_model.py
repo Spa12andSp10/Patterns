@@ -24,3 +24,7 @@ class group_model(entity_model):
         :return: Созданная группа.
         """
         return cls(name=name)
+
+    @classmethod
+    def required_keys(cls) -> frozenset:
+        return frozenset({"name"})
