@@ -305,30 +305,37 @@ def test_recipe_model_content(original_storage, restored_storage):
     assert restored.calculate_nutrition() == original.calculate_nutrition()
 
 
-
 def test_short_reference_resolved_from_cache(original_storage, serialized_json):
     """
-    Проверяет resolve краткой ссылки {unique_code, type, name}.
-    Ожидаемый результат:
-      - свежий deserializer с пустым кэшем -> arguments_exeption;
-      - тот же deserializer -> возвращает исходный объект.
+    Проверяет resolve краткой ссылки {unique_code, type, name}
     """
     # Подготовка
-    deserializer = storage_deserializer(_reset_storage())
-    deserializer.deserialized(serialized_json)
-    target = deserializer.storage.groups[0]
+    target = original_storage.groups[0]
     short_ref = {
         "unique_code": target.unique_code,
         "type": entity_type.GROUP.value,
         "name": target.name,
     }
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
-        storage_deserializer(_reset_storage()).factory.deserialize(short_ref)
+    nested = {
+        "group": short_ref,
+        "name": "Holder",
+        "full_name": "Holder",
+        "item_type": "product",
+    }
 
-    resolved = deserializer.factory.deserialize(short_ref)
-    assert resolved is target
+    # Действие и проверки: пустой кэш -> ошибка
+    fresh = storage_deserializer(_reset_storage())
+    with pytest.raises(arguments_exeption):
+        fresh.factory.deserialize(nested)
+
+    # Действие: наполняем кэш и повторяем
+    deserializer = storage_deserializer(_reset_storage())
+    deserializer.deserialized(serialized_json)
+    resolved = deserializer.factory.deserialize(nested)
+
+    assert resolved.group is not None
+    assert resolved.group.unique_code == target.unique_code
 
 
 def test_cyclic_self_reference_raises(original_storage, serialized_json):

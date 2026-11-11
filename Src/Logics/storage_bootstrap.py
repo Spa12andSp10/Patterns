@@ -1,131 +1,85 @@
 import json
 
-from Src.Core.exception import arguments_exeption
-from Src.Core.ingredient_types import ingredient_type
+from Src.Core.exception import base_exception
+from Src.Logics.deserialize_factory import deserialize_factory
 from Src.Logics.settings_manager import settings_manager
 from Src.Logics.storage_manager import storage_manager
 from Src.Models.group_model import group_model
-from Src.Models.ingredient_model import ingredient_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
-from Src.Models.technicalmap_model import technicalmap_model
 from Src.Models.warehouse_model import warehouse_model
 
 
 class storage_bootstrap:
-    """Формирует эталонные данные при первом старте из «сырого» storage_data.json"""
+    """Формирует эталонные данные при первом старте.
 
-    def __init__(self, storage: storage_manager = None) -> None:
+    Десериализация моделей — через deserialize_factory.
+    """
+
+    __default_file_name = "storage_data.json"
+
+    _mapping = (
+        ("groups",       "add_group",       group_model),
+        ("ranges",       "add_range",       range_model),
+        ("nomenclature", "add_nomenclature", nomenclature_model),
+        ("warehouse",    "add_warehouse",   warehouse_model),
+        ("recipes",      "add_recipe",      None),
+    )
+
+    def __init__(self, storage: storage_manager = None,
+                 factory: deserialize_factory = None) -> None:
         self._storage = storage if storage is not None else storage_manager()
+        self._factory = factory if factory is not None else deserialize_factory()
 
-
-    @staticmethod
-    def _read_json(file_name: str) -> dict:
-        with open(file_name, "r", encoding="utf-8") as file:
-            return json.load(file)
-
-
-    def _convert_ranges(self, data: list) -> None:
+    def _resolve_ranges(self, items: list) -> list:
+        prepared = []
         by_name: dict = {}
-        for item in data:
-            param = range_model.create(
-                name=item["name"],
-                conversion_factor=item.get(
-                    "conversion_factor",
-                    item.get("conversation_factor", 1),
-                ),
-                base=None,
-            )
-            by_name[param.name] = param
-            self._storage.add_range(param)
+        for raw in items:
+            copy = dict(raw)
+            copy["base"] = None
+            prepared.append(copy)
+            by_name[raw["name"]] = copy
 
-        for item in data:
-            base_name = item.get("base")
-            if base_name and item["name"] in by_name and base_name in by_name:
-                by_name[item["name"]].base = by_name[base_name]
+        for raw, prepared_item in zip(items, prepared):
+            base_name = raw.get("base")
+            if base_name and base_name in by_name:
+                prepared_item["base"] = by_name[base_name]
+        return prepared
 
-    def _convert_groups(self, data: list) -> None:
-        for item in data:
-            self._storage.add_group(group_model.create(name=item["name"]))
+    def _load_section(self, items: list, add_method: str,
+                      model_cls=None) -> None:
+        if not items:
+            return
+        add = getattr(self._storage, add_method, None)
+        if add is None:
+            return
+        for raw in items:
+            model = self._factory.deserialize(raw)
+            add(model)
+            if model_cls is not None:
+                self._factory.resolver.register_name(model_cls, model)
 
-    def _find_group(self, name: str):
-        for g in self._storage.groups:
-            if g.name == name:
-                return g
-        return None
+    def _load(self, data: dict) -> bool:
+        self._factory.clear()
 
-    def _find_range(self, name: str):
-        for r in self._storage.ranges:
-            if r.name == name:
-                return r
-        return None
+        self._load_section(data.get("groups", []),
+                           "add_group", group_model)
 
-    def _convert_nomenclature(self, data: list) -> None:
-        for item in data:
-            gr = self._find_group(item["group"])
-            rn = self._find_range(item["range"])
-            if gr is None or rn is None:
-                raise arguments_exeption(
-                    "nomenclature",
-                    f"Не найдена группа/единица для '{item['name']}'",
-                )
-            self._storage.add_nomenclature(
-                nomenclature_model.create(
-                    full_name=item["full_name"],
-                    name=item["name"],
-                    group=gr,
-                    range=rn,
-                    item_type=item.get("item_type", item.get("type", "")),
-                )
-            )
+        ranges_raw = self._resolve_ranges(data.get("ranges", []))
+        self._load_section(ranges_raw, "add_range", range_model)
 
-    def _convert_warehouse(self, data: list) -> None:
-        for item in data:
-            self._storage.add_warehouse(
-                warehouse_model.create(name=item["name"], address=item["address"])
-            )
+        self._load_section(data.get("nomenclature", []),
+                           "add_nomenclature", nomenclature_model)
 
-    def _convert_recipes(self, data: list) -> None:
-        for item in data:
-            ingredients = [
-                ingredient_model.create(
-                    full_name=ing["full_name"],
-                    brutto=ing["brutto"],
-                    proteins=ing["proteins"],
-                    fats=ing["fats"],
-                    carbohydrates=ing["carbohydrates"],
-                    coef=ing.get("coef", 1.0),
-                    item_type=ing.get("item_type", ing.get("type", ingredient_type.PRODUCT)),
-                )
-                for ing in item.get("ingredients", [])
-            ]
-            self._storage.add_recipe(
-                technicalmap_model.create(
-                    ingredients=ingredients,
-                    preparation_method=item.get("preparation_method", {}),
-                    description=item["description"],
-                    time=item["time"],
-                    name=item["name"],
-                )
-            )
+        self._load_section(data.get("warehouse", []),
+                           "add_warehouse", warehouse_model)
 
-    def _convert(self, data: dict) -> bool:
-        self._storage._groups = []
-        self._storage._nomenclature = []
-        self._storage._warehouse = []
-        self._storage._ranges = []
-        self._storage._recipes = []
-        self._storage._ingredients = []
+        self._load_section(data.get("recipes", []),
+                           "add_recipe", None)
 
-        self._convert_ranges(data.get("ranges", []))
-        self._convert_groups(data.get("groups", []))
-        self._convert_nomenclature(data.get("nomenclature", []))
-        self._convert_warehouse(data.get("warehouse", []))
-        self._convert_recipes(data.get("recipes", []))
         return True
 
     def first_start(self, file_name: str = "") -> bool:
-        """Загружает «сырые» эталонные данные, если установлен флаг первого старта."""
         manager = settings_manager()
         if not manager.is_loaded:
             manager.load()
@@ -133,13 +87,20 @@ class storage_bootstrap:
         if not manager.settings.first_launch_flag:
             return False
 
+        inner = file_name or self.__default_file_name
         try:
-            data = self._read_json(file_name or "storage_data.json")
+            with open(inner, "r", encoding="utf-8") as file:
+                data = json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
             return False
 
-        norm = self._convert(data)
+        try:
+            loaded = self._load(data)
+        except base_exception:
+            return False
+        if not loaded:
+            return False
 
         manager.settings.first_launch_flag = False
         manager.save()
-        return norm
+        return True

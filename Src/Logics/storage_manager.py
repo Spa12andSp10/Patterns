@@ -8,12 +8,7 @@ from Src.Models.warehouse_model import warehouse_model
 
 
 class storage_manager(abstract_manager):
-    """Singleton-хранилище доменных справочников.
-
-    Отвечает за хранение и доступ к справочникам:
-    группы, единицы измерения, номенклатура, склады, рецепты.
-
-    """
+    """Singleton-хранилище доменных справочников."""
 
     def __new__(cls):
         if not hasattr(cls, "instance"):
@@ -62,7 +57,6 @@ class storage_manager(abstract_manager):
             return all(getattr(item, "name", None) != name for item in items)
         return all(item != candidate for item in items)
 
-
     def add_group(self, value: group_model) -> bool:
         if self._is_unique(self._groups, value):
             self._groups.append(value)
@@ -108,6 +102,3 @@ class storage_manager(abstract_manager):
 
         tonna = range_model.create_tonna(base=kilogram)
         self.add_range(tonna)
-
-
-

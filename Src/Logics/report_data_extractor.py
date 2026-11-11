@@ -1,104 +1,150 @@
-from Src.Models.technicalmap_model import technicalmap_model
+from Src.Core.exception import arguments_exeption
+from Src.Dtos.report_data_dto import report_data_dto
+from Src.Models.group_model import group_model
+from Src.Models.warehouse_model import warehouse_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
-from Src.Dtos.report_data_dto import report_data_dto
-from Src.Core.exception import arguments_exeption
+from Src.Models.ingredient_model import ingredient_model
+from Src.Models.technicalmap_model import technicalmap_model
 
 
 class report_data_extractor:
-    """Извлекает и формирует табличные данные для отчетов.
+    """Преобразует доменную модель в табличные данные (header + rows).
 
-    Преобразует любую доменную модель (рецепт, номенклатуру, единицу
-    измерения) в универсальный DTO с заголовками и строками, который
-    затем используется всеми форматами отчетов (TXT, HTML, CSV и др.).
+    Поддерживаемые типы: technicalmap_model, ingredient_model,
+    nomenclature_model, range_model, group_model, warehouse_model.
 
-    Фабрика [тип сущности, метод] позволяет расширять набор
-    поддерживаемых сущностей без правки метода extract.
+    Порядок isinstance-проверок важен:
+      - technicalmap_model — до ingredient/nomenclature (у него свои поля);
+      - ingredient_model — ДО nomenclature_model (это его наследник);
+      - nomenclature_model — до range_model (не пересекаются, но порядок
+        фиксированный);
+      - group_model и warehouse_model — листья, в конце.
     """
 
     @staticmethod
-    def _extract_recipe(source: technicalmap_model) -> report_data_dto:
-        """Извлекает данные из технологической карты (рецепта).
+    def extract(source) -> report_data_dto:
+        """Строит табличные данные по доменной модели.
 
-        :param source: Рецепт.
-        :return: DTO с заголовками и строками данных.
+        :param source: Доменная модель.
+        :return: DTO с header и rows.
+        :raises arguments_exeption: Если тип не поддерживается.
         """
-        header = ["Code", "Name", "Brutto", "Netto",
-                  "Proteins", "Fats", "Carbohydrates"]
-        rows = []
-        for item in source.ingredients:
-            rows.append([
-                item.unique_code,
-                item.name,
-                item.calculate_brutto(),
-                item.calculate_netto(),
-                item.calculate_proteins(),
-                item.calculate_fats(),
-                item.calculate_carbohydrates(),
-            ])
-        return report_data_dto.create(header, rows)
+        if isinstance(source, technicalmap_model):
+            return report_data_extractor._from_recipe(source)
 
-    @staticmethod
-    def _extract_nomenclature(source: nomenclature_model) -> report_data_dto:
-        """Извлекает данные из номенклатуры.
+        # ingredient_model наследует nomenclature_model — проверяем раньше
+        if isinstance(source, ingredient_model):
+            return report_data_extractor._from_ingredient(source)
 
-        :param source: Номенклатура.
-        :return: DTO с заголовками и строками данных.
-        """
-        header = ["Code", "Name", "Full name", "Group", "Range"]
-        group_name = source.group.name if source.group else "Not found"
-        range_name = source.range.name if source.range else "Not found"
+        if isinstance(source, nomenclature_model):
+            return report_data_extractor._from_nomenclature(source)
 
-        rows = [[
-            source.unique_code,
-            source.name,
-            source.full_name,
-            group_name,
-            range_name,
-        ]]
+        if isinstance(source, range_model):
+            return report_data_extractor._from_range(source)
 
-        return report_data_dto.create(header, rows)
+        if isinstance(source, group_model):
+            return report_data_extractor._from_group(source)
 
-    @staticmethod
-    def _extract_range(source: range_model) -> report_data_dto:
-        """Извлекает данные из единицы измерения.
-
-        :param source: Единица измерения.
-        :return: DTO с заголовками и строками данных.
-        """
-        header = ["Code", "Name", "Coef", "Base"]
-        base_name = source.base.name if source.base else "Not found"
-
-        rows = [[
-            source.unique_code,
-            source.name,
-            source.conversion_factor,
-            base_name,
-        ]]
-
-        return report_data_dto.create(header, rows)
-
-    _extractors: dict = {
-        technicalmap_model: _extract_recipe.__func__,
-        nomenclature_model: _extract_nomenclature.__func__,
-        range_model: _extract_range.__func__,
-    }
-
-    @classmethod
-    def extract(cls, source) -> report_data_dto:
-        """Универсальная точка входа для извлечения данных.
-
-        Ищет в фабрике метод по типу сущности и вызывает его.
-
-        :param source: Доменная модель (рецепт, номенклатура, единица измерения).
-        :return: DTO с заголовками и строками данных.
-        :raises arguments_exeption: Если передан неподдерживаемый тип.
-        """
-        for entity_type, extractor in cls._extractors.items():
-            if isinstance(source, entity_type):
-                return extractor(source)
+        if isinstance(source, warehouse_model):
+            return report_data_extractor._from_warehouse(source)
 
         raise arguments_exeption(
             "extract",
-            f"Неверный тип формирования отчета: {type(source).__name__}"
+            f"Неверный тип формирования отчета: {type(source).__name__}",
         )
+
+
+    @staticmethod
+    def _from_recipe(source: technicalmap_model) -> report_data_dto:
+        """Рецепт: шапка с общими полями + строки ингредиентов.
+
+        Колонки: ingredient, brutto, proteins, fats, carbohydrates,
+        coef, method.
+        """
+        header = [
+            "ingredient", "brutto", "proteins", "fats",
+            "carbohydrates", "coef", "method",
+        ]
+        rows = []
+        for ing in source.ingredients:
+            method = source.preparation_method.get(
+                getattr(ing, "full_name", ""), ""
+            )
+            rows.append([
+                getattr(ing, "full_name", ""),
+                ing.brutto,
+                ing.proteins,
+                ing.fats,
+                ing.carbohydrates,
+                ing.coef,
+                method,
+            ])
+        return report_data_dto.create(header=header, rows=rows)
+
+
+    @staticmethod
+    def _from_ingredient(source: ingredient_model) -> report_data_dto:
+        """Ингредиент: одноимённые поля в одной строке."""
+        header = [
+            "full_name", "brutto", "proteins", "fats",
+            "carbohydrates", "coef", "item_type", "unique_code",
+        ]
+        rows = [[
+            source.full_name,
+            source.brutto,
+            source.proteins,
+            source.fats,
+            source.carbohydrates,
+            source.coef,
+            source.item_type,
+            source.unique_code,
+        ]]
+        return report_data_dto.create(header=header, rows=rows)
+
+
+    @staticmethod
+    def _from_nomenclature(source: nomenclature_model) -> report_data_dto:
+        """Номенклатура: поля + ссылки group/range (по name)."""
+        header = [
+            "name", "full_name", "group", "range",
+            "item_type", "unique_code",
+        ]
+        rows = [[
+            source.name,
+            source.full_name,
+            getattr(source.group, "name", "") if source.group else "",
+            getattr(source.range, "name", "") if source.range else "",
+            source.item_type,
+            source.unique_code,
+        ]]
+        return report_data_dto.create(header=header, rows=rows)
+
+
+    @staticmethod
+    def _from_range(source: range_model) -> report_data_dto:
+        """Единица измерения: name, conversion_factor, base, unique_code."""
+        header = ["name", "conversion_factor", "base", "unique_code"]
+        rows = [[
+            source.name,
+            source.conversion_factor,
+            getattr(source.base, "name", "") if source.base else "",
+            source.unique_code,
+        ]]
+        return report_data_dto.create(header=header, rows=rows)
+
+
+    @staticmethod
+    def _from_group(source: group_model) -> report_data_dto:
+        """Группа номенклатуры: name, unique_code."""
+        header = ["name", "unique_code"]
+        rows = [[source.name, source.unique_code]]
+        return report_data_dto.create(header=header, rows=rows)
+
+
+    @staticmethod
+    def _from_warehouse(source: warehouse_model) -> report_data_dto:
+        """Склад: name, address, unique_code."""
+        header = ["name", "address", "unique_code"]
+        rows = [[source.name, source.address, source.unique_code]]
+        return report_data_dto.create(header=header, rows=rows)
