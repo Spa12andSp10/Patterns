@@ -4,7 +4,8 @@
         {"name": "Meat products"},
         {"name": "Grocery"},
         {"name": "Vegetables, fruit"},
-        {"name": "Packages"}
+        {"name": "Packages"},
+        {"name": "Sauces"}
     ],
     "ranges": [
         {"name": "gram", "conversion_factor": 1, "base": null},
@@ -18,7 +19,7 @@
         {"name": "Apple", "full_name": "Astrakhan apple",
          "group": "Vegetables, fruit", "range": "kilogram", "item_type": "product"},
         {"name": "Pasta", "full_name": "Durum wheat pasta",
-         "group": "Grocery", "range": "gram", "type": "product"},
+         "group": "Grocery", "range": "gram", "item_type": "product"},
         {"name": "Beef", "full_name": "Beef (top grade)",
          "group": "Meat products", "range": "kilogram", "item_type": "product"},
         {"name": "Cloche", "full_name": "Aluminum cloche",

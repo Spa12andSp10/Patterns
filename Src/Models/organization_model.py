@@ -3,12 +3,7 @@ from Src.Core.validator import validator
 
 
 class organization_model(entity_model):
-    """Модель организации.
-
-    Содержит определения: наименование, ИНН, БИК, счёт,
-    форму собственности и их длины/ограничения.
-    Создаётся через classmethod-конструктор create.
-    """
+    """Модель организации."""
 
     __inn: str = ""
     __bic: str = ""
@@ -19,16 +14,16 @@ class organization_model(entity_model):
     __len_account: int = 20
     __max_len_owner: int = 50
 
+    _fields = (
+        ("name", "primitive", None, str),
+        ("inn", "primitive", None, str),
+        ("bic", "primitive", None, str),
+        ("account", "primitive", None, str),
+        ("owner", "primitive", None, str),
+    )
+
     def __init__(self, name: str = "", inn: str = "", bic: str = "",
                  account: str = "", owner: str = "") -> None:
-        """Инициализирует организацию.
-
-        :param name: Наименование организации.
-        :param inn: ИНН организации.
-        :param bic: БИК банка.
-        :param account: Расчётный счёт.
-        :param owner: Форма собственности / владелец.
-        """
         super().__init__()
         self.name = name
         self.inn = inn
@@ -39,33 +34,15 @@ class organization_model(entity_model):
     @classmethod
     def create(cls, name: str, inn: str, bic: str,
                account: str, owner: str) -> "organization_model":
-        """Создаёт организацию по параметрам.
-
-        :param name: Наименование организации.
-        :param inn: ИНН.
-        :param bic: БИК.
-        :param account: Расчётный счёт.
-        :param owner: Форма собственности.
-        :return: Созданная организация.
-        """
         return cls(name=name, inn=inn, bic=bic,
                    account=account, owner=owner)
 
     @property
     def inn(self) -> str:
-        """Возвращает ИНН организации."""
         return self.__inn
 
     @inn.setter
     def inn(self, value: str) -> None:
-        """Устанавливает ИНН организации.
-
-        :param value: Строка ИНН длиной 10 символов.
-        :raises arguments_exeption: Если значение не строка или None.
-        :raises length_exeption: Если длина не равна 10.
-        :raises validation_exeption: Если значение содержит нецифры
-            или контрольная сумма некорректна.
-        """
         validator.validate(value, str, "inn", self.__len_inn)
         validator.digit_validate(value, "inn")
         validator.check_inn(value)
@@ -73,37 +50,20 @@ class organization_model(entity_model):
 
     @property
     def bic(self) -> str:
-        """Возвращает БИК банка."""
         return self.__bic
 
     @bic.setter
     def bic(self, value: str) -> None:
-        """Устанавливает БИК банка.
-
-        :param value: Строка БИК длиной 9 символов.
-        :raises arguments_exeption: Если значение не строка или None.
-        :raises length_exeption: Если длина не равна 9.
-        :raises validation_exeption: Если значение содержит нецифры.
-        """
         validator.validate(value, str, "bic", self.__len_bic)
         validator.digit_validate(value, "bic")
         self.__bic = value
 
     @property
     def account(self) -> str:
-        """Возвращает расчётный счёт."""
         return self.__account
 
     @account.setter
     def account(self, value: str) -> None:
-        """Устанавливает расчётный счёт.
-
-        :param value: Строка счёта длиной 20 символов.
-        :raises arguments_exeption: Если значение не строка или None.
-        :raises length_exeption: Если длина не равна 20.
-        :raises validation_exeption: Если значение содержит нецифры
-            или контрольная сумма некорректна.
-        """
         validator.validate(value, str, "account", self.__len_account)
         validator.digit_validate(value, "account")
         validator.check_account(value, self.__bic)
@@ -111,16 +71,9 @@ class organization_model(entity_model):
 
     @property
     def owner(self) -> str:
-        """Возвращает форму собственности / владельца."""
         return self.__owner
 
     @owner.setter
     def owner(self, value: str) -> None:
-        """Устанавливает форму собственности / владельца.
-
-        :param value: Строка длиной не более 50 символов.
-        :raises arguments_exeption: Если значение не строка или None.
-        :raises max_length_exeption: Если длина превышает 50 символов.
-        """
         validator.validate(value, str, "owner", max_len=self.__max_len_owner)
         self.__owner = value

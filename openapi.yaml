@@ -1,0 +1,754 @@
+openapi: 3.0.0
+info:
+  title: Main API
+  version: "1.0"
+  description: API "ООО <Ромашка>" — отчёты по рецептам, номенклатуре, единицам измерения и т.д.
+
+servers:
+  - url: http://localhost:1111
+    description: Local development server
+
+components:
+
+  parameters:
+
+    Fmt:
+      name: fmt
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/ReportFormat'
+      description: |
+        Формат отчёта (txt, csv, markdown, xml, html, png).
+        Если не задан — берётся из settings.json (`response_format`).
+
+    EntityType:
+      name: type
+      in: query
+      required: true
+      schema:
+        type: string
+        enum: [recipe, nomenclature, range, warehouse, group]
+      description: Тип сущности.
+
+    UniqueCode:
+      name: code
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Уникальный код конкретного объекта.
+
+    EntityTypeInPath:
+      name: entity_type
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [recipe, nomenclature, range, warehouse, group]
+      description: |
+        Тип сущности.
+
+        **Внимание:** после выбора типа не забудьте выбрать соответствующую **Schema** в теле запроса, чтобы получить правильный пример заполнения.
+
+    CodeInPath:
+      name: code
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Уникальный код сущности.
+
+  schemas:
+
+    ReportFormat:
+      type: string
+      enum: [txt, csv, markdown, xml, html, png]
+      description: Формат отчёта.
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+      example:
+        detail: "Сущность типа 'recipe' с кодом '...' не найдена"
+
+    CodeItem:
+      type: object
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+      example:
+        name: "Milk"
+        code: "b361388d34634d229771f0ec3cfc4e11"
+
+    ReportFormatInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Имя элемента enum (TXT, CSV, ...).
+        slug:
+          type: string
+          description: Строка для URL/query (txt, csv, ...).
+        code:
+          type: integer
+          description: Числовой код формата.
+        mime:
+          type: string
+          description: MIME-тип для Content-Type.
+      example:
+        name: "CSV"
+        slug: "csv"
+        code: 2
+        mime: "text/csv; charset=utf-8"
+
+
+    GroupCreateRequest:
+      type: object
+      description: |
+        Схема создания группы номенклатуры.
+        Используйте для `entity_type: "group"`.
+      required: [entity_type, name]
+      properties:
+        entity_type:
+          type: string
+          enum: [group]
+          description: "Тип сущности. Обязательно должен совпадать с URL."
+        name:
+          type: string
+          maxLength: 50
+      example:
+        entity_type: "group"
+        name: "Dairy products"
+
+    RangeCreateRequest:
+      type: object
+      description: |
+        Схема создания единицы измерения.
+        Используйте для `entity_type: "range"`.
+      required: [entity_type, name, conversion_factor]
+      properties:
+        entity_type:
+          type: string
+          enum: [range]
+          description: "Тип сущности. Обязательно должен совпадать с URL."
+        name:
+          type: string
+          maxLength: 50
+        conversion_factor:
+          type: number
+          minimum: 0
+        base:
+          description: |
+            Базовая единица измерения.
+            **Можно не указывать**, если вы уверены, что у этой единицы нет базовой
+            (например, для самой базовой единицы "gram").
+            Передаётся **строго объектом** с `unique_code` существующей базы.
+          oneOf:
+            - type: string
+            - type: object
+      example:
+        entity_type: "range"
+        name: "kilogram"
+        conversion_factor: 1000
+        base: {"name": "gram", "unique_code": "56db80ee1c354037ace95f27fcbfbc1c"}
+
+    WarehouseCreateRequest:
+      type: object
+      description: |
+        Схема создания склада.
+        Используйте для `entity_type: "warehouse"`.
+      required: [entity_type, name, address]
+      properties:
+        entity_type:
+          type: string
+          enum: [warehouse]
+          description: "Тип сущности. Обязательно должен совпадать с URL."
+        name:
+          type: string
+          maxLength: 50
+        address:
+          type: string
+          maxLength: 255
+      example:
+        entity_type: "warehouse"
+        name: "Main warehouse"
+        address: "29 Lermontova St."
+
+    NomenclatureCreateRequest:
+      type: object
+      description: |
+        Схема создания номенклатуры.
+        Используйте для `entity_type: "nomenclature"`.
+      required: [entity_type, name, full_name]
+      properties:
+        entity_type:
+          type: string
+          enum: [nomenclature]
+          description: "Тип сущности. Обязательно должен совпадать с URL."
+        name:
+          type: string
+          maxLength: 50
+        full_name:
+          type: string
+          maxLength: 255
+        item_type:
+          type: string
+          enum: [product, semi_finished, packaging]
+          description: "Тип ингредиента. По умолчанию 'product'."
+        group:
+          type: object
+          description: |
+            Группа номенклатуры.
+            Обязательно передавайте объект с `unique_code` существующей группы,
+            иначе будет создана новая группа-дубликат.
+          properties:
+            name:
+              type: string
+            unique_code:
+              type: string
+        range:
+          type: object
+          description: |
+            Единица измерения.
+            Обязательно передавайте объект с `unique_code` существующей единицы,
+            иначе будет создана новая единица-дубликат.
+          properties:
+            name:
+              type: string
+            unique_code:
+              type: string
+      example:
+        entity_type: "nomenclature"
+        name: "Milk"
+        full_name: "Pasteurized milk 3.2%"
+        item_type: "product"
+        group: {"name": "Dairy products", "unique_code": "fb74c2841a094da8b3af2b3183fe943b"}
+        range: {"name": "liter", "conversion_factor": 1000, "unique_code": "9a88e32552374ccf9f8989b35e6c4453"}
+
+    RecipeCreateRequest:
+      type: object
+      description: |
+        Схема создания рецепта (технологической карты).
+        Используйте для `entity_type: "recipe"`.
+      required: [entity_type, name, description, time, ingredients, preparation_method]
+      properties:
+        entity_type:
+          type: string
+          enum: [recipe]
+          description: "Тип сущности. Обязательно должен совпадать с URL."
+        name:
+          type: string
+          maxLength: 50
+        description:
+          type: string
+          description: "Пошаговая инструкция приготовления."
+        time:
+          type: string
+          description: "Время приготовления (например, '1 hour 20 minutes')."
+        ingredients:
+          type: object
+          description: |
+            Список ингредиентов.
+            Передаётся как объект, где ключи — порядковые номера ("0", "1", ...),
+            а значения — объекты с полями full_name, brutto, proteins, fats, carbohydrates, coef.
+          additionalProperties:
+            type: object
+        preparation_method:
+          type: object
+          description: |
+            Способы приготовления ингредиентов.
+            Передаётся как объект вида `{"Имя ингредиента": {"value": "boil"}}`.
+          additionalProperties:
+            type: object
+      example:
+        entity_type: "recipe"
+        name: "Pasta with beef"
+        description: "1. Preparation. ..."
+        time: "1 hour 20 minutes"
+        ingredients:
+          "0":
+            full_name: "Durum wheat pasta"
+            brutto: 400
+            proteins: 10.4
+            fats: 1.1
+            carbohydrates: 69.7
+            coef: 1.0
+            item_type: "product"
+        preparation_method:
+          "Durum wheat pasta": {"value": "boil"}
+
+  responses:
+
+    BadRequest:
+      description: Ошибка в параметрах запроса.
+      content:
+        text/plain:
+          schema:
+            type: string
+          example: "Неизвестный формат: 'pdf'"
+
+    NotFound:
+      description: Сущность не найдена.
+      content:
+        text/plain:
+          schema:
+            type: string
+          example: "Рецепт не найден"
+
+    Conflict:
+      description: |
+        Сущность с таким code уже существует, либо конфликт
+        уникальности по name.
+      content:
+        text/plain:
+          schema:
+            type: string
+          example: "Сущность типа 'group' с кодом '...' уже существует"
+
+    ServerError:
+      description: Внутренняя ошибка.
+      content:
+        text/plain:
+          schema:
+            type: string
+          example: "Ошибка формирования отчета: ..."
+
+    Created:
+      description: Сущность создана.
+      headers:
+        Location:
+          schema:
+            type: string
+          description: URI созданной сущности.
+
+    TextReport:
+      description: |
+        Текстовый отчёт (TXT, HTML, XML). MIME соответствует формату
+        (`text/plain`, `text/html`, `application/xml`).
+      content:
+        text/plain:
+          schema:
+            type: string
+
+    BinaryDownloadPage:
+      description: |
+        HTML-страница со ссылкой на скачивание бинарного отчёта
+        (CSV, Markdown, PNG).
+      content:
+        text/html:
+          schema:
+            type: string
+
+    BinaryFile:
+      description: |
+        Бинарный файл отчёта (CSV, Markdown, PNG).
+        Имя файла — `<name>.<slug>`.
+      content:
+        text/csv:
+          schema:
+            type: string
+            format: binary
+        text/markdown:
+          schema:
+            type: string
+            format: binary
+        image/png:
+          schema:
+            type: string
+            format: binary
+
+paths:
+
+  /api/get_report:
+    get:
+      summary: Отчёт по встроенному рецепту
+      description: |
+        Формирует отчёт по «встроенному» рецепту.
+        Формат — `?fmt=` или `settings.json`. Если формат бинарный,
+        возвращается HTML-страница со ссылкой на скачивание.
+      operationId: main.get_report
+      parameters:
+        - $ref: '#/components/parameters/Fmt'
+      responses:
+        '200':
+          description: Отчёт (текст) или HTML-страница со ссылкой на скачивание.
+          content:
+            text/plain:
+              schema:
+                type: string
+            text/html:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/get_report/download:
+    get:
+      summary: Скачать бинарный отчёт по встроенному рецепту
+      description: |
+        Отдаёт бинарный файл отчёта (CSV, Markdown, PNG).
+        Если выбран текстовый формат (TXT, HTML, XML) — 400.
+      operationId: main.get_report_download
+      parameters:
+        - $ref: '#/components/parameters/Fmt'
+      responses:
+        '200':
+          $ref: '#/components/responses/BinaryFile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/get_report_with_type_and_code:
+    get:
+      summary: Отчёт по сущности (type + code)
+      description: |
+        Формирует отчёт для указанной сущности (`recipe`, `nomenclature`,
+        `range`, `warehouse`, `group`) по её уникальному коду.
+        Формат — `?fmt=` или `settings.json`. Если формат бинарный,
+        возвращается HTML-страница со ссылкой на скачивание.
+      operationId: main.get_report_with_type_and_code
+      parameters:
+        - $ref: '#/components/parameters/EntityType'
+        - $ref: '#/components/parameters/UniqueCode'
+        - $ref: '#/components/parameters/Fmt'
+      responses:
+        '200':
+          description: Отчёт (текст) или HTML-страница со ссылкой на скачивание.
+          content:
+            text/plain:
+              schema:
+                type: string
+            text/html:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/get_report_download_with_type_and_code:
+    get:
+      summary: Скачать бинарный отчёт по сущности (type + code)
+      description: |
+        Отдаёт бинарный файл отчёта для указанной сущности.
+        Если выбран текстовый формат — 400.
+      operationId: main.get_report_download_with_type_and_code
+      parameters:
+        - $ref: '#/components/parameters/EntityType'
+        - $ref: '#/components/parameters/UniqueCode'
+        - $ref: '#/components/parameters/Fmt'
+      responses:
+        '200':
+          $ref: '#/components/responses/BinaryFile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/create_default:
+    get:
+      summary: Отчёт по сущности в формате из settings.json
+      description: |
+        Формирует отчёт для указанной сущности. Формат берётся
+        из settings.json (`response_format`),
+        параметр `?fmt=` игнорируется. Если формат бинарный —
+        возвращается HTML-страница со ссылкой на скачивание.
+      operationId: main.create_default
+      parameters:
+        - $ref: '#/components/parameters/EntityType'
+        - $ref: '#/components/parameters/UniqueCode'
+      responses:
+        '200':
+          description: Отчёт или HTML-страница со ссылкой на скачивание.
+          content:
+            text/plain:
+              schema:
+                type: string
+            text/html:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/create_default_download:
+    get:
+      summary: Скачать бинарный отчёт в формате из settings.json
+      description: |
+        Отдаёт бинарный файл отчёта в формате, указанном в settings.json.
+        Если текущий формат в настройках — текстовый (TXT, HTML, XML),
+        возвращается 400.
+      operationId: main.create_default_download
+      parameters:
+        - $ref: '#/components/parameters/EntityType'
+        - $ref: '#/components/parameters/UniqueCode'
+      responses:
+        '200':
+          $ref: '#/components/responses/BinaryFile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/get_codes:
+    get:
+      summary: Уникальные коды сущностей
+      description: |
+        Возвращает список `{name, code}` по каждой сущности в хранилище.
+      operationId: main.get_codes
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [recipe, nomenclature, range, warehouse, group]
+          description: |
+            Тип сущности. Если не задан — возвращаются все поддерживаемые типы.
+      responses:
+        '200':
+          description: Список кодов.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    description: Все типы сразу.
+                    additionalProperties:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/CodeItem'
+                  - type: object
+                    description: Один тип (когда задан ?type=).
+                    properties:
+                      type:
+                        type: string
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CodeItem'
+              example:
+                recipe:
+                  - name: "Pasta with beef in milk-apple sauce"
+                    code: "8419f6b517644e509bfdb5c4d293907a"
+                nomenclature:
+                  - name: "Milk"
+                    code: "b361388d34634d229771f0ec3cfc4e11"
+        '400':
+          description: Неизвестный тип сущности.
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /api/get_formats:
+    get:
+      summary: Список поддерживаемых форматов отчётов
+      description: |
+        Возвращает перечень форматов из `report_type_enum`:
+        имя, slug для `?fmt=`, числовой код и MIME-тип.
+      operationId: main.get_formats
+      responses:
+        '200':
+          description: Массив форматов.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReportFormatInfo'
+              example:
+                - name: "TXT"
+                  slug: "txt"
+                  code: 1
+                  mime: "text/plain; charset=utf-8"
+                - name: "CSV"
+                  slug: "csv"
+                  code: 2
+                  mime: "text/csv; charset=utf-8"
+                - name: "MARKDOWN"
+                  slug: "markdown"
+                  code: 3
+                  mime: "text/markdown; charset=utf-8"
+                - name: "XML"
+                  slug: "xml"
+                  code: 4
+                  mime: "application/xml; charset=utf-8"
+                - name: "HTML"
+                  slug: "html"
+                  code: 5
+                  mime: "text/html; charset=utf-8"
+                - name: "PNG"
+                  slug: "png"
+                  code: 6
+                  mime: "text/png"
+
+  /api/{entity_type}/{code}:
+    put:
+      summary: Создать сущность с клиентским unique_code
+      description: |
+        Создаёт новый экземпляр модели (`group`, `range`, `warehouse`,
+        `nomenclature`, `recipe`) с `unique_code`, заданным клиентом.
+
+        Поле `entity_type` **обязательно** должно быть в теле — это требование `discriminator`,
+        который выбирает нужную схему тела по его значению.
+
+        Повторный `PUT` с тем же `code` **не создаёт**
+        дубликат — возвращает `409 Conflict`.
+      operationId: main.create_entity_with_code
+      parameters:
+        - $ref: '#/components/parameters/EntityTypeInPath'
+        - $ref: '#/components/parameters/CodeInPath'
+      requestBody:
+        required: true
+        description: |
+          **Как правильно заполнить тело:**
+          1. Справа от заголовка "Request body" выберите нужную **Schema** (Group, Range, Warehouse, Nomenclature, Recipe).
+          2. Поле `entity_type` в JSON **обязательно** и должно совпадать с URL.
+          3. Если вы выбрали не ту схему — вы получите ошибку 400.
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/GroupCreateRequest'
+                - $ref: '#/components/schemas/RangeCreateRequest'
+                - $ref: '#/components/schemas/WarehouseCreateRequest'
+                - $ref: '#/components/schemas/NomenclatureCreateRequest'
+                - $ref: '#/components/schemas/RecipeCreateRequest'
+              discriminator:
+                propertyName: entity_type
+                mapping:
+                  group:        '#/components/schemas/GroupCreateRequest'
+                  range:        '#/components/schemas/RangeCreateRequest'
+                  warehouse:    '#/components/schemas/WarehouseCreateRequest'
+                  nomenclature: '#/components/schemas/NomenclatureCreateRequest'
+                  recipe:       '#/components/schemas/RecipeCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    
+  /api/{entity_type}:
+    post:
+      summary: Создать сущность
+      description: |
+        Создаёт новый экземпляр модели (`group`, `range`, `warehouse`,
+        `nomenclature`, `recipe`) с `unique_code`, который сгенерировался самостоятельно.
+
+        Поле `entity_type` **обязательно** должно быть в теле — это требование `discriminator`,
+        который выбирает нужную схему тела по его значению.
+
+      operationId: main.create_entity
+      parameters:
+        - $ref: '#/components/parameters/EntityTypeInPath'
+      requestBody:
+        required: true
+        description: |
+          **Как правильно заполнить тело:**
+          1. Справа от заголовка "Request body" выберите нужную **Schema** (Group, Range, Warehouse, Nomenclature, Recipe).
+          2. Поле `entity_type` в JSON **обязательно** и должно совпадать с URL.
+          3. Если вы выбрали не ту схему — вы получите ошибку 400.
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/GroupCreateRequest'
+                - $ref: '#/components/schemas/RangeCreateRequest'
+                - $ref: '#/components/schemas/WarehouseCreateRequest'
+                - $ref: '#/components/schemas/NomenclatureCreateRequest'
+                - $ref: '#/components/schemas/RecipeCreateRequest'
+              discriminator:
+                propertyName: entity_type
+                mapping:
+                  group:        '#/components/schemas/GroupCreateRequest'
+                  range:        '#/components/schemas/RangeCreateRequest'
+                  warehouse:    '#/components/schemas/WarehouseCreateRequest'
+                  nomenclature: '#/components/schemas/NomenclatureCreateRequest'
+                  recipe:       '#/components/schemas/RecipeCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/delete/{code}:
+    delete:
+      summary: Удалить сущность по коду
+      description: |
+        Удаляет сущность с заданным `unique_code` независимо от её типа.
+        Если сущность не найдена — возвращает 404.
+        Если на неё ссылаются другие сущности — возвращает 409 Conflict.
+      operationId: main.delete
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Уникальный код сущности.
+      responses:
+        '204':
+          description: Сущность успешно удалена.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Удаление невозможно из-за связей с другими сущностями.
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/update/{code}:
+    patch:
+      summary: Обновить поля сущности по коду
+      description: |
+        Частично обновляет сущность с заданным `unique_code`.
+        Передавайте только те поля, которые хотите изменить.
+        Менять `unique_code` и `entity_type` запрещено.
+      operationId: main.update
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Уникальный код сущности.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              example:
+                name: "New Group Name"
+      responses:
+        '200':
+          description: Сущность успешно обновлена.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
