@@ -14,14 +14,6 @@ class organization_model(entity_model):
     __len_account: int = 20
     __max_len_owner: int = 50
 
-    _fields = (
-        ("name", "primitive", None, str),
-        ("inn", "primitive", None, str),
-        ("bic", "primitive", None, str),
-        ("account", "primitive", None, str),
-        ("owner", "primitive", None, str),
-    )
-
     def __init__(self, name: str = "", inn: str = "", bic: str = "",
                  account: str = "", owner: str = "") -> None:
         super().__init__()

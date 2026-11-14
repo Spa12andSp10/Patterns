@@ -9,11 +9,10 @@ class range_model(entity_model):
     __base: "range_model" = None
     __conversion_factor: float = 1.0
 
-    _fields = (
-        ("name", "primitive", None, str),
-        ("conversion_factor", "primitive", None, float),
-        ("base", "model", None, None, (), False, None),
-    )
+    _field_overrides = {
+        "conversion_factor": {"required": True},
+    }
+
     def __init__(self, name: str = "", conversion_factor: float = 1.0,
                  base: "range_model" = None) -> None:
         super().__init__()

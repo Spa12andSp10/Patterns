@@ -6,6 +6,7 @@ from main import api
 from Src.Logics.storage_manager import storage_manager
 from Src.Models.group_model import group_model
 from Src.Models.range_model import range_model
+from Src.Models.technicalmap_model import technicalmap_model
 
 
 @pytest.fixture(scope="module")
@@ -183,3 +184,75 @@ def test_delete_entity_fail_referenced(client):
     assert response.status_code == 409
     assert "Нельзя удалить" in response.data.decode("utf-8")
     assert len(storage_manager().groups) == 1
+
+
+def test_delete_entity_fail_referenced_base_range(client):
+    """
+    Проверяет провальное удаление единицы измерения, на которую ссылается base.
+    Ожидаемый результат: статус 409, путь 'base', обе единицы остались.
+    """
+    # Подготовка
+    gram = range_model.create_gram()
+    kilogram = range_model.create_kilogram(base=gram)
+    storage_manager().add_range(gram)
+    storage_manager().add_range(kilogram)
+    code = gram.unique_code
+
+    # Действие
+    response = client.delete(f"/api/delete/{code}")
+
+    # Проверки
+    assert response.status_code == 409
+    assert "base" in response.data.decode("utf-8")
+    assert len(storage_manager().ranges) == 2
+
+
+def test_delete_entity_fail_referenced_nested_recipe(client):
+    """
+    Проверяет провальное удаление технологической карты, вложенной в другую.
+    Ожидаемый результат: статус 409, путь 'ingredients[0]', обе карты остались.
+    """
+    # Подготовка
+    sauce = technicalmap_model.create(
+        ingredients=[],
+        preparation_method={},
+        description="Sauce",
+        time="5 min",
+        name="Sauce",
+    )
+    dish = technicalmap_model.create(
+        ingredients=[sauce],
+        preparation_method={},
+        description="Dish",
+        time="10 min",
+        name="Dish",
+    )
+    storage_manager().add_recipe(sauce)
+    storage_manager().add_recipe(dish)
+    code = sauce.unique_code
+
+    # Действие
+    response = client.delete(f"/api/delete/{code}")
+
+    # Проверки
+    assert response.status_code == 409
+    assert "ingredients[0]" in response.data.decode("utf-8")
+    assert len(storage_manager().recipes) == 2
+
+
+def test_delete_entity_success_unreferenced_range(client):
+    """
+    Проверяет успешное удаление единицы измерения без ссылок.
+    Ожидаемый результат: статус 204, справочник единиц пуст.
+    """
+    # Подготовка
+    gram = range_model.create_gram()
+    storage_manager().add_range(gram)
+    code = gram.unique_code
+
+    # Действие
+    response = client.delete(f"/api/delete/{code}")
+
+    # Проверки
+    assert response.status_code == 204
+    assert storage_manager().ranges == []

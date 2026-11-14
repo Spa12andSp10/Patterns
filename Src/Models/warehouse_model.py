@@ -8,11 +8,6 @@ class warehouse_model(entity_model):
     __address: str = ""
     __max_len_address: int = 255
 
-    _fields = (
-        ("name", "primitive", None, str),
-        ("address", "primitive", None, str),
-    )
-
     def __init__(self, name: str = "", address: str = "") -> None:
         super().__init__()
         self.name = name

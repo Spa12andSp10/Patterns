@@ -27,11 +27,6 @@ class settings_model(abstract_model):
 
     @organization.setter
     def organization(self, value: organization_model = None):
-        """Устанавливает карточку организации.
-
-        :param value: Новая карточка организации.
-        :raises arguments_exeption: Если значение не organization_model.
-        """
         validator.validate(value, organization_model, "organization")
         self.__organization = value
 
@@ -42,12 +37,6 @@ class settings_model(abstract_model):
 
     @boss_name.setter
     def boss_name(self, value: str) -> None:
-        """Устанавливает ФИО руководителя.
-
-        :param value: ФИО руководителя (строка до 255 символов).
-        :raises arguments_exeption: Если значение не строка или None.
-        :raises max_length_exeption: Если длина превышает 255 символов.
-        """
         validator.validate(value, str, "boss_name", max_len=self.__max_len_boss_name)
         self.__boss_name = value
 
@@ -58,27 +47,15 @@ class settings_model(abstract_model):
 
     @account_name.setter
     def account_name(self, value: str):
-        """Устанавливает ФИО главного бухгалтера.
-
-        :param value: ФИО главного бухгалтера (строка до 255 символов).
-        :raises arguments_exeption: Если значение не строка или None.
-        :raises max_length_exeption: Если длина превышает 255 символов.
-        """
         validator.validate(value, str, "account_name", max_len=self.__max_len_account_name)
         self.__account_name = value
 
     @property
     def first_launch_flag(self) -> bool:
-        """Возвращает флаг первого запуска."""
         return self.__first_launch_flag
 
     @first_launch_flag.setter
     def first_launch_flag(self, new_flag: bool):
-        """Устанавливает флаг первого запуска.
-
-        :param new_flag: Новое значение флага (True/False).
-        :raises arguments_exeption: Если значение не bool.
-        """
         validator.validate(new_flag, bool, "first_launch_flag")
         self.__first_launch_flag = new_flag
 
@@ -89,17 +66,6 @@ class settings_model(abstract_model):
 
     @response_format.setter
     def response_format(self, value: str) -> None:
-        """Устанавливает новый базовый формат данных.
-
-        Формат проверяется по единому справочнику report_type_enum —
-        это единственный источник истины о поддерживаемых форматах.
-        from_slug регистронезависим, поэтому 'HTML', 'html' и 'Html'
-        считаются одним и тем же форматом.
-
-        :param value: Новый строчный базовый формат данных (str).
-        :raises arguments_exeption: Если значение не строка или None.
-        :raises arguments_exeption: Если формат отсутствует в report_type_enum.
-        """
         validator.validate(value, str, "response_format")
         try:
             report_type_enum.from_slug(value)

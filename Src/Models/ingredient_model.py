@@ -14,15 +14,12 @@ class ingredient_model(nomenclature_model, nutrition_component):
     __carbohydrates: float = 0.0
     __coef: float = 0.0
 
-    _fields = (
-        ("full_name", "primitive", None, str, ("name",)),
-        ("brutto", "primitive", None, float),
-        ("proteins", "primitive", None, float),
-        ("fats", "primitive", None, float),
-        ("carbohydrates", "primitive", None, float),
-        ("coef", "primitive", None, float, (), False, 1.0),
-        ("item_type", "primitive", None, str, ("type",), False, None),
-    )
+    _field_aliases = {
+        "full_name": ("name",),
+    }
+    _field_overrides = {
+        "coef": {"required": False, "default": 1.0},
+    }
 
     def __init__(self, full_name: str, brutto: float, proteins: float,
                  fats: float, carbohydrates: float, coef: float,

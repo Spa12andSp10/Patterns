@@ -110,20 +110,20 @@ def test_valid_result_settings_manager_boss_and_account_name():
     assert account_name == "Semyonov. A. G."
 
 
-def test_valid_result_settings_manager_data_not_empty():
+def test_valid_result_settings_manager_settings_not_empty():
     """
-    Проверяет, что «сырые» данные JSON доступны через свойство data.
-    Ожидаемый результат: data — непустой словарь, содержит ключи organization
-    и first_launch_flag.
+    Проверяет, что после загрузки доступна заполненная модель настроек.
+    Ожидаемый результат: is_loaded=True, organization заполнена,
+    first_launch_flag имеет bool-значение.
     """
     # Подготовка
     manager = settings_manager()
     manager.load(_settings_path())
 
     # Действие
-    data = manager.data
+    settings = manager.settings
 
     # Проверки
-    assert isinstance(data, dict)
-    assert "organization" in data
-    assert "first_launch_flag" in data
+    assert manager.is_loaded is True
+    assert settings.organization is not None
+    assert isinstance(settings.first_launch_flag, bool)

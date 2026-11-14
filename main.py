@@ -8,10 +8,9 @@ from Src.Core.exception import arguments_exeption
 from Src.Dtos.report_type_enum import report_type_enum
 from Src.Logics.deserialize_factory import deserialize_factory
 from Src.Logics.entity_resolver import entity_resolver
+from Src.Logics.reference_finder import reference_finder
 from Src.Logics.report_factory import report_factory
 from Src.Logics.settings_manager import settings_manager
-from Src.Logics.storage_bootstrap import storage_bootstrap
-from Src.Logics.storage_deserializer import storage_deserializer
 from Src.Logics.storage_manager import storage_manager
 
 api = connexion.FlaskApp(__name__)
@@ -34,44 +33,15 @@ def _settings_path() -> str:
 
 
 
-def _init_settings() -> settings_manager:
-    """Загружает настройки через сам менеджер."""
-    sm = settings_manager()
-    sm.load(_settings_path())
-    return sm
+settings_manager_instance = settings_manager()
+settings_manager_instance.load(_settings_path())
 
-
-def _init_storage() -> storage_manager:
-    """Инициализирует хранилище.
-
-    Логика:
-      1. Если есть serialized_storage.json — грузим его
-         через storage_deserializer (симметрично save_models).
-      2. Иначе — первый старт: наполняем из «сырого» storage_data.json
-         через storage_bootstrap.
-    """
-    storage = storage_manager()
-
-    models_path = Path(_storage_models_path())
-    if models_path.exists():
-        ok = storage_deserializer(storage).load(str(models_path))
-        if ok:
-            storage._is_loaded = True
-            return storage
-
-    raw_path = Path(_storage_path())
-    if raw_path.exists():
-        storage_bootstrap(storage).first_start(str(raw_path))
-        storage._is_loaded = True
-
-    return storage
-
-
-settings_manager_instance = _init_settings()
-storage = _init_storage()
+storage = storage_manager()
+storage.load(_storage_models_path(), _storage_path())
 
 factory = report_factory()
 resolver = entity_resolver(storage)
+references = reference_finder(resolver.all_entities)
 
 
 
@@ -132,73 +102,23 @@ def _resolve_or_error(entity_type: str, code: str):
 
 
 def _find_default_recipe():
-    """Жёстко заданный рецепт для /api/get_report."""
+    """Заданный рецепт для /api/get_report."""
     return next(
-        (card for card in storage.recipes
+        (card for card in resolver.provider_for("recipe")()
          if card.name == "Pasta with beef in milk-apple sauce"),
         None,
     )
 
 
-def _find_references(target_model, storage, visited=None):
-    """Ищет ссылки на target_model в других сущностях.
-    Возвращает (объект_родитель, имя_поля) или None.
-    """
-    if visited is None:
-        visited = set()
-
-    if target_model.unique_code in visited:
-        return None
-    visited.add(target_model.unique_code)
-
-    all_entities = (
-        storage.groups + storage.ranges + storage.nomenclatures +
-        storage.warehouses + storage.recipes
-    )
-
-    for entity in all_entities:
-        if entity is target_model:
-            continue
-        for attr_name in dir(entity):
-            if attr_name.startswith("_"):
-                continue
-
-            try:
-                attr_value = getattr(entity, attr_name)
-            except Exception:
-                continue
-
-            if attr_value is target_model:
-                return entity, attr_name
-
-            if isinstance(attr_value, list):
-                for item in attr_value:
-                    if item is target_model:
-                        return entity, attr_name
-
-                    if hasattr(item, "unique_code"):
-                        for sub_attr in dir(item):
-                            if sub_attr.startswith("_"):
-                                continue
-                            try:
-                                if getattr(item, sub_attr) is target_model:
-                                    return entity, f"{attr_name}[].{sub_attr}"
-                            except Exception:
-                                pass
-
-    return None
-
-
 
 @api.route("/api/get_report", methods=["GET"])
 def get_report():
-    """Возвращает отчёт по жестко заданному рецепту."""
+    """Возвращает отчёт по заданному рецепту."""
     recipe = _find_default_recipe()
     if recipe is None:
         return "Рецепт не найден", 404
 
-    fmt = (request.args.get("fmt") or "").lower() \
-        or settings_manager_instance.settings.response_format.lower()
+    fmt = (request.args.get("fmt") or "").lower() or settings_manager_instance.settings.response_format.lower()
 
     try:
         report_type = _parse_report_type(fmt)
@@ -217,7 +137,7 @@ def get_report():
 
 @api.route("/api/get_report/download", methods=["GET"])
 def get_report_download():
-    """Отдаёт бинарный файл отчета для жестко заданного рецепта."""
+    """Отдаёт бинарный файл отчета для заданного рецепта."""
     recipe = _find_default_recipe()
     if recipe is None:
         return "Рецепт не найден", 404
@@ -239,8 +159,7 @@ def get_report_download():
 @api.route("/api/get_report_with_type_and_code", methods=["GET"])
 def get_report_with_type_and_code():
     """Возвращает отчет по указанному типу сущности и уникальному коду."""
-    fmt = (request.args.get("fmt") or "").lower() \
-        or settings_manager_instance.settings.response_format.lower()
+    fmt = (request.args.get("fmt") or "").lower() or settings_manager_instance.settings.response_format.lower()
 
     try:
         report_type = _parse_report_type(fmt)
@@ -354,6 +273,7 @@ def create_default_download():
 
 @api.route("/api/get_codes", methods=["GET"])
 def get_codes():
+    """Возвращает имена и уникальные коды"""
     entity_type = (request.args.get("type") or "").strip().lower()
     supported = resolver.supported_types()
 
@@ -389,6 +309,7 @@ def get_formats():
 
 @api.route("/api/<entity_type>/<code>", methods=["PUT"])
 def create_entity_with_code(entity_type: str, code: str):
+    """Созхдает сущность по коду, который задлал пользователь"""
     supported = resolver.supported_types()
     if entity_type not in supported:
         return (
@@ -449,6 +370,7 @@ def create_entity_with_code(entity_type: str, code: str):
 
 @api.route("/api/<entity_type>", methods=["POST"])
 def create_entity(entity_type: str):
+    """Создает сущность с сгенерированным кодом"""
     supported = resolver.supported_types()
     if entity_type not in supported:
         return (
@@ -496,46 +418,22 @@ def create_entity(entity_type: str):
 @api.route("/api/delete/<code>", methods=["DELETE"])
 def delete(code: str):
     """Удаляет сущность по уникальному коду, проверяя связи."""
-    storage = storage_manager()
-
-    all_collections = (
-        storage.groups,
-        storage.ranges,
-        storage.nomenclatures,
-        storage.warehouses,
-        storage.recipes,
-    )
-
-    existing = None
-    target_collection = None
-
-    for collection in all_collections:
-        for item in collection:
-            if item.unique_code == code:
-                existing = item
-                target_collection = collection
-                break
-        if existing:
-            break
-
+    existing = resolver.find_by_code(code)
     if existing is None:
         return f"Сущность с кодом {code!r} не найдена", 404
 
-    ref_result = _find_references(existing, storage)
-
-    if ref_result is not None:
-        ref_entity, ref_attr = ref_result
+    reference = references.find(existing)
+    if reference is not None:
+        ref_entity, ref_path = reference
         name = getattr(ref_entity, "name", ref_entity.unique_code)
         return (
             f"Нельзя удалить сущность (код: {code}): "
             f"на неё ссылается {type(ref_entity).__name__} '{name}' "
-            f"(поле '{ref_attr}')",
+            f"(поле '{ref_path}')",
             409,
         )
 
-    try:
-        target_collection.remove(existing)
-    except ValueError:
+    if not resolver.remove(existing):
         return "Ошибка удаления из хранилища", 500
 
     return "", 204
@@ -543,7 +441,7 @@ def delete(code: str):
 
 @api.route("/api/update/<code>", methods=["PATCH"])
 def update(code: str):
-    """Обновляет поля сущности по уникальному коду (PATCH)."""
+    """Обновляет поля сущности по уникальному коду (PATCH), проверяя связи."""
     body = request.get_json(silent=True, force=True)
     if not isinstance(body, dict):
         return "Тело должно быть JSON-объектом", 400
@@ -552,28 +450,7 @@ def update(code: str):
         return "Изменение unique_code запрещено", 400
     body.pop("entity_type", None)
 
-    storage = storage_manager()
-
-    all_collections = (
-        storage.groups,
-        storage.ranges,
-        storage.nomenclatures,
-        storage.warehouses,
-        storage.recipes,
-    )
-
-    existing = None
-    target_collection = None
-
-    for collection in all_collections:
-        for item in collection:
-            if item.unique_code == code:
-                existing = item
-                target_collection = collection
-                break
-        if existing:
-            break
-
+    existing = resolver.find_by_code(code)
     if existing is None:
         return f"Сущность с кодом {code!r} не найдена", 404
 
@@ -593,8 +470,8 @@ def update(code: str):
         updated_model = factory.deserialize(current_data)
         updated_model.unique_code = code
 
-        idx = target_collection.index(existing)
-        target_collection[idx] = updated_model
+        if not resolver.replace(existing, updated_model):
+            return "Ошибка обновления: сущность не найдена", 500
 
     except arguments_exeption as e:
         return str(e), 400

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from Src.Core.abstract_manager import abstract_manager
 from Src.Models.group_model import group_model
 from Src.Models.ingredient_model import ingredient_model
@@ -25,6 +27,35 @@ class storage_manager(abstract_manager):
             self._recipes = []
             self._ingredients = []
             self._is_loaded = False
+
+    def load(self, models_file: str = "", raw_file: str = "") -> bool:
+        """Загружает хранилище из слепка или выполняет первый старт.
+
+        :param models_file: Путь к serialized_storage.json.
+        :param raw_file: Путь к storage_data.json для первого старта.
+        :return: True, если хранилище загружено.
+        """
+        if self._is_loaded:
+            return True
+        # Библиотеки объявлены в функции, чтоьы избежать цикла
+        from Src.Logics.storage_deserializer import storage_deserializer
+        from Src.Logics.storage_bootstrap import storage_bootstrap
+
+        if models_file:
+            models_path = Path(models_file)
+            if models_path.exists():
+                if storage_deserializer(self).load(str(models_path)):
+                    self._is_loaded = True
+                    return True
+
+        if raw_file:
+            raw_path = Path(raw_file)
+            if raw_path.exists():
+                if storage_bootstrap(self).first_start(str(raw_path)):
+                    self._is_loaded = True
+                    return True
+
+        return False
 
     @property
     def groups(self) -> list:

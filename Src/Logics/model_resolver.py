@@ -35,11 +35,15 @@ class model_resolver:
         self._name_cache.clear()
 
     def register_name(self, model_cls, model) -> None:
-        """Регистрирует модель в кэше имён (вызывает bootstrap)."""
+        """Регистрирует модель в кэше имён."""
         name = getattr(model, "name", None)
         if name is None:
             return
         self._name_cache.setdefault(model_cls, {})[name] = model
+
+    def get_by_name(self, model_cls: type, name: str):
+        """Возвращает модель указанного класса с именем name или None."""
+        return self._name_cache.get(model_cls, {}).get(name)
 
     def can_resolve(self, source: dict) -> bool:
         return any(cls.required_keys() <= source.keys() for cls in self._parsers)

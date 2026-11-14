@@ -17,13 +17,10 @@ class technicalmap_model(entity_model, nutrition_component):
     __with_package: bool = False
     __with_pf: bool = False
 
-    _fields = (
-        ("name", "primitive", None, str),
-        ("description", "primitive", None, str),
-        ("time", "primitive", None, str),
-        ("preparation_method", "dict", None, None, (), False, {}),
-        ("ingredients", "list", None, None, (), True, None),
-    )
+    _field_overrides = {
+        "name": {"required": True},
+        "preparation_method": {"required": False, "default": {}},
+    }
 
     def __init__(self, ingredients: list, preparation_method: dict,
                  description: str, time: str, name: str = ""):

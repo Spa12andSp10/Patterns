@@ -3,16 +3,7 @@ from Src.Logics.storage_manager import storage_manager
 
 
 class entity_resolver:
-    """Резолвер сущностей по типу и уникальному коду.
-
-    Инкапсулирует знание о том, где в хранилище лежит та или иная
-    коллекция. main.py больше не знает про storage.recipes /
-    storage.nomenclatures / storage.ranges — он просто просит
-    резолвер найти сущность.
-
-    Фабрика {тип: метод получения списка} позволяет добавлять новые
-    типы сущностей без правки метода resolve (принцип Open/Closed).
-    """
+    """Резолвер сущностей по типу и уникальному коду."""
 
     def __init__(self, storage: storage_manager = None):
         """Инициализирует резолвер.
@@ -83,3 +74,72 @@ class entity_resolver:
         raise LookupError(
             f"Сущность типа '{entity_type}' с кодом '{code}' не найдена"
         )
+
+    def all_entities(self):
+        """Итерирует все сущности всех поддерживаемых типов."""
+        for provider in self.__providers.values():
+            yield from provider()
+
+    def find_by_code(self, code: str):
+        """Находит сущность по уникальному коду без указания типа.
+
+        :param code: Уникальный код сущности.
+        :return: Найденная модель или None.
+        """
+        normalized = (code or "").strip()
+        if not normalized:
+            return None
+
+        for entity in self.all_entities():
+            if entity.unique_code == normalized:
+                return entity
+
+        return None
+
+    def collection_for(self, entity):
+        """Возвращает коллекцию, в которой хранится сущность.
+
+        :param entity: Доменная модель.
+        :return: Список сущностей или None.
+        """
+        for provider in self.__providers.values():
+            items = provider()
+            if any(item is entity or item == entity for item in items):
+                return items
+
+        return None
+
+    def remove(self, entity) -> bool:
+        """Удаляет сущность из соответствующей коллекции.
+
+        :param entity: Доменная модель.
+        :return: True при успешном удалении.
+        """
+        items = self.collection_for(entity)
+        if items is None:
+            return False
+
+        try:
+            items.remove(entity)
+        except ValueError:
+            return False
+
+        return True
+
+    def replace(self, entity, replacement) -> bool:
+        """Заменяет сущность в её коллекции.
+
+        :param entity: Старая модель.
+        :param replacement: Новая модель.
+        :return: True при успешной замене.
+        """
+        items = self.collection_for(entity)
+        if items is None:
+            return False
+
+        for index, item in enumerate(items):
+            if item is entity or item == entity:
+                items[index] = replacement
+                return True
+
+        return False

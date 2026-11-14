@@ -13,14 +13,6 @@ class nomenclature_model(entity_model):
     __group: group_model = None
     __range: range_model = None
 
-    _fields = (
-        ("full_name", "primitive", None, str),
-        ("name", "primitive", None, str),
-        ("group", "model", group_model, None, (), False, None),
-        ("range", "model", range_model, None, (), False, None),
-        ("item_type", "primitive", None, str, ("type",), False, ""),
-    )
-
     def __init__(self, full_name: str = "", name: str = "",
                  group: group_model = None,
                  range: range_model = None,
