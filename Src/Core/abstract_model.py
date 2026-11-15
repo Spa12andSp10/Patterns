@@ -114,11 +114,10 @@ class abstract_model(ABC):
                 "model_cls", "Ожидался класс abstract_model или None"
             )
 
+        if model_cls is None:
+            return chain.deserialize(raw, resolver, visited)
+
         if isinstance(raw, str):
-            if model_cls is None:
-                raise arguments_exeption(
-                    "model_cls", "Для строковой ссылки требуется класс модели"
-                )
             model = resolver.get_by_name(model_cls, raw)
             if model is None:
                 raise arguments_exeption(
@@ -148,6 +147,10 @@ class abstract_model(ABC):
     def _build_model_value(cls, spec: field_spec, raw: Any,
                            chain: deserializer, resolver: model_lookup,
                            visited: set[str]) -> Any:
+        if spec.model_cls is None and isinstance(raw, str):
+            raise arguments_exeption(
+                "model_cls", "Для строковой ссылки требуется класс модели"
+            )
         return cls._build_model(raw, spec.model_cls, chain, resolver, visited)
 
     @classmethod

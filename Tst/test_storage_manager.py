@@ -310,6 +310,9 @@ def test_valid_result_storage_manager_load_first_start(isolated_settings):
     """
     # Подготовка
     manager, settings_path = isolated_settings
+    # Тест проверяет именно первый запуск, поэтому состояние задаём явно,
+    # не полагаясь на текущее значение в Tst/settings.json.
+    manager.settings.first_launch_flag = True
     sm = storage_manager()
 
     # Действие

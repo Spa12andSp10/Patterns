@@ -4,57 +4,6 @@ from typing import Callable, Iterable
 from Src.Core.abstract_model import abstract_model
 
 
-def _container_items(value):
-    """Возвращает пары (ключ, элемент) для контейнера.
-
-    :param value: Значение поля.
-    :return: items() для словаря, enumerate() для списка/кортежа, иначе ().
-    """
-    if isinstance(value, dict):
-        return value.items()
-    if isinstance(value, (list, tuple)):
-        return enumerate(value)
-    return ()
-
-
-def _references_in(value):
-    """Отдаёт ссылки из значения поля.
-
-    :param value: Значение поля.
-    :return: Итератор пар (ключ, вложенная модель).
-    """
-    if isinstance(value, abstract_model):
-        yield None, value
-        return
-
-    for key, item in _container_items(value):
-        if isinstance(item, abstract_model):
-            yield key, item
-
-
-def _segment(field_name: str, key):
-    """Строит сегмент пути для поля.
-
-    :param field_name: Имя поля.
-    :param key: None для одиночной ссылки, иначе индекс/ключ контейнера.
-    :return: Сегмент пути.
-    """
-    return field_name if key is None else f"{field_name}[{key!r}]"
-
-
-def _field_children(model: abstract_model, spec):
-    """Отдаёт ссылки одного поля модели.
-
-    :param model: Модель-владелец поля.
-    :param spec: Описание поля.
-    :return: Итератор пар (вложенная модель, сегмент пути).
-    """
-    value = getattr(model, spec.name, None)
-
-    for key, child in _references_in(value):
-        yield child, _segment(spec.name, key)
-
-
 class reference_finder:
     """Ищет ссылки на доменную модель в наборе сущностей.
 
@@ -122,6 +71,57 @@ class reference_finder:
         :return: Итератор пар (вложенная модель, сегмент пути).
         """
         return chain.from_iterable(
-            _field_children(model, spec)
+            reference_finder._field_children(model, spec)
             for spec in model._specs()
         )
+
+    @staticmethod
+    def _field_children(model: abstract_model, spec):
+        """Отдаёт ссылки одного поля модели.
+
+        :param model: Модель-владелец поля.
+        :param spec: Описание поля.
+        :return: Итератор пар (вложенная модель, сегмент пути).
+        """
+        value = getattr(model, spec.name, None)
+
+        for key, child in reference_finder._references_in(value):
+            yield child, reference_finder._segment(spec.name, key)
+
+    @staticmethod
+    def _references_in(value):
+        """Отдаёт ссылки из значения поля.
+
+        :param value: Значение поля.
+        :return: Итератор пар (ключ, вложенная модель).
+        """
+        if isinstance(value, abstract_model):
+            yield None, value
+            return
+
+        for key, item in reference_finder._container_items(value):
+            if isinstance(item, abstract_model):
+                yield key, item
+
+    @staticmethod
+    def _container_items(value):
+        """Возвращает пары (ключ, элемент) для контейнера.
+
+        :param value: Значение поля.
+        :return: items() для словаря, enumerate() для списка/кортежа, иначе ().
+        """
+        if isinstance(value, dict):
+            return value.items()
+        if isinstance(value, (list, tuple)):
+            return enumerate(value)
+        return ()
+
+    @staticmethod
+    def _segment(field_name: str, key):
+        """Строит сегмент пути для поля.
+
+        :param field_name: Имя поля.
+        :param key: None для одиночной ссылки, иначе индекс/ключ контейнера.
+        :return: Сегмент пути.
+        """
+        return field_name if key is None else f"{field_name}[{key!r}]"
