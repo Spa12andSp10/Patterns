@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from Src.Logics.storage_manager import storage_manager
@@ -6,6 +8,11 @@ from Src.Models.group_model import group_model
 from Src.Models.range_model import range_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.warehouse_model import warehouse_model
+
+
+def _tst_path(name: str) -> str:
+    """Путь к файлу в Tst/."""
+    return str(Path(__file__).resolve().parent / name)
 
 
 @pytest.fixture(autouse=True)
@@ -23,8 +30,24 @@ def reset_storage():
 
 
 @pytest.fixture
+def isolated_settings(tmp_path):
+    """Загружает настройки из временной копии, чтобы не менять Tst/settings.json."""
+    manager = settings_manager()
+    saved = (manager._settings, manager._file_name, manager._is_loaded)
+
+    source = Path(_tst_path("settings.json"))
+    target = tmp_path / "settings.json"
+    target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    manager.load(str(target))
+
+    yield manager, target
+
+    manager._settings, manager._file_name, manager._is_loaded = saved
+
+
+@pytest.fixture
 def loaded_storage():
-    """Хранилище, наполненное моделями напрямую (без JSON/десериализации)."""
+    """Хранилище, наполненное моделями напрямую."""
     sm = storage_manager()
 
     gram = range_model.create_gram()
@@ -257,3 +280,91 @@ def test_valid_name():
         assert True
     except Exception:
         assert False
+
+
+def test_valid_result_storage_manager_load_serialized():
+    """
+    Проверяет загрузку хранилища из serialized_storage.json.
+    Ожидаемый результат: True, флаг is_loaded установлен, данные не пусты.
+    """
+    # Подготовка
+    sm = storage_manager()
+
+    # Действие
+    result = sm.load(
+        _tst_path("serialized_storage.json"),
+        _tst_path("storage_data.json"),
+    )
+
+    # Проверки
+    assert result is True
+    assert sm.is_loaded is True
+    assert len(sm.groups) > 0
+    assert len(sm.ranges) > 0
+
+
+def test_valid_result_storage_manager_load_first_start(isolated_settings):
+    """
+    Проверяет первый старт из storage_data.json при отсутствии слепка.
+    Ожидаемый результат: True, данные загружены, флаг первого запуска снят.
+    """
+    # Подготовка
+    manager, settings_path = isolated_settings
+    # Тест проверяет именно первый запуск, поэтому состояние задаём явно,
+    # не полагаясь на текущее значение в Tst/settings.json.
+    manager.settings.first_launch_flag = True
+    sm = storage_manager()
+
+    # Действие
+    result = sm.load(
+        _tst_path("missing_serialized_storage.json"),
+        _tst_path("storage_data.json"),
+    )
+
+    # Проверки
+    assert result is True
+    assert sm.is_loaded is True
+    assert len(sm.groups) > 0
+    assert len(sm.nomenclatures) > 0
+    assert manager.settings.first_launch_flag is False
+    assert settings_path.exists()
+
+
+def test_invalid_result_storage_manager_load_missing_files(tmp_path):
+    """
+    Проверяет загрузку при отсутствии обоих файлов.
+    Ожидаемый результат: False, флаг is_loaded не установлен.
+    """
+    # Подготовка
+    sm = storage_manager()
+
+    # Действие
+    result = sm.load(
+        str(tmp_path / "missing_serialized_storage.json"),
+        str(tmp_path / "missing_storage_data.json"),
+    )
+
+    # Проверки
+    assert result is False
+    assert sm.is_loaded is False
+    assert sm.groups == []
+
+
+def test_valid_result_storage_manager_load_is_idempotent():
+    """
+    Проверяет повторную загрузку уже заполненного хранилища.
+    Ожидаемый результат: True и отсутствие дубликатов.
+    """
+    # Подготовка
+    sm = storage_manager()
+    assert sm.load(_tst_path("serialized_storage.json")) is True
+    groups_before = len(sm.groups)
+    ranges_before = len(sm.ranges)
+
+    # Действие
+    result = sm.load(_tst_path("serialized_storage.json"))
+
+    # Проверки
+    assert result is True
+    assert len(sm.groups) == groups_before
+    assert len(sm.ranges) == ranges_before

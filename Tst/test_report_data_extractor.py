@@ -30,7 +30,7 @@ def _make_recipe() -> technicalmap_model:
 
 
 def _extract(source):
-    """Хелпер: возвращает (header, rows) из DTO."""
+    """Возвращает (header, rows) из DTO."""
     dto = report_data_extractor.extract(source)
     return dto.header, dto.rows
 
@@ -38,7 +38,7 @@ def _extract(source):
 def test_valid_extract_recipe_headers():
     """
     Проверяет заголовки рецепта.
-    Ожидаемый результат: 7 колонок, соответствующих рецепту.
+    Ожидаемый результат: 7 колонок с полями ингредиентов и способом приготовления.
     """
     # Подготовка
     recipe = _make_recipe()
@@ -47,8 +47,8 @@ def test_valid_extract_recipe_headers():
     header, data = _extract(recipe)
 
     # Проверки
-    expected_header = ["Code", "Name", "Brutto", "Netto",
-                       "Proteins", "Fats", "Carbohydrates"]
+    expected_header = ["ingredient", "brutto", "proteins", "fats",
+                       "carbohydrates", "coef", "method"]
     assert header == expected_header
     assert len(header) == 7
 
@@ -71,7 +71,8 @@ def test_valid_extract_recipe_row_count():
 def test_valid_extract_recipe_first_row_values():
     """
     Проверяет значения первой строки рецепта.
-    Ожидаемый результат: наименование, брутто, нетто и БЖУ «Durum wheat pasta».
+    Ожидаемый результат: наименование, бруто, БЖУ, коэффициент и способ
+    приготовления «Durum wheat pasta».
     """
     # Подготовка
     recipe = _make_recipe()
@@ -81,20 +82,19 @@ def test_valid_extract_recipe_first_row_values():
     first_row = data[0]
 
     # Проверки
-    assert isinstance(first_row[0], str)
-    assert len(first_row[0]) > 0
-    assert first_row[1] == "Durum wheat pasta"
-    assert first_row[2] == 400.0
-    assert first_row[3] == 400.0
-    assert first_row[4] == 10.4
-    assert first_row[5] == 1.1
-    assert first_row[6] == 69.7
+    assert first_row[0] == "Durum wheat pasta"
+    assert first_row[1] == 400.0
+    assert first_row[2] == 10.4
+    assert first_row[3] == 1.1
+    assert first_row[4] == 69.7
+    assert first_row[5] == 1.0
+    assert first_row[6] == ""
 
 
 def test_valid_extract_nomenclature_headers():
     """
     Проверяет заголовки номенклатуры.
-    Ожидаемый результат: 5 колонок.
+    Ожидаемый результат: 6 колонок.
     """
     # Подготовка
     milk = nomenclature_model.create(
@@ -109,9 +109,10 @@ def test_valid_extract_nomenclature_headers():
     header, data = _extract(milk)
 
     # Проверки
-    expected_header = ["Code", "Name", "Full name", "Group", "Range"]
+    expected_header = ["name", "full_name", "group", "range",
+                       "item_type", "unique_code"]
     assert header == expected_header
-    assert len(header) == 5
+    assert len(header) == 6
 
 
 def test_valid_extract_nomenclature_data_values():
@@ -134,17 +135,18 @@ def test_valid_extract_nomenclature_data_values():
 
     # Проверки
     assert len(data) == 1
-    assert row[0] == milk.unique_code
-    assert row[1] == "Milk"
-    assert row[2] == "Pasteurized milk 3.2%"
-    assert row[3] == "Dairy products"
-    assert row[4] == "Liter"
+    assert row[0] == "Milk"
+    assert row[1] == "Pasteurized milk 3.2%"
+    assert row[2] == "Dairy products"
+    assert row[3] == "Liter"
+    assert row[4] == "product"
+    assert row[5] == milk.unique_code
 
 
 def test_valid_extract_nomenclature_no_group_and_range():
     """
     Проверяет обработку номенклатуры без группы и единицы.
-    Ожидаемый результат: в колонках Group и Range выводится 'Not found'.
+    Ожидаемый результат: в колонках group и range выводятся пустые строки.
     """
     # Подготовка
     empty_nom = nomenclature_model.create(
@@ -160,8 +162,10 @@ def test_valid_extract_nomenclature_no_group_and_range():
     row = data[0]
 
     # Проверки
-    assert row[3] == "Not found"
-    assert row[4] == "Not found"
+    assert row[2] == ""
+    assert row[3] == ""
+    assert row[4] == "product"
+    assert row[5] == empty_nom.unique_code
 
 
 def test_valid_extract_range_headers():
@@ -176,7 +180,7 @@ def test_valid_extract_range_headers():
     header, data = _extract(kg)
 
     # Проверки
-    expected_header = ["Code", "Name", "Coef", "Base"]
+    expected_header = ["name", "conversion_factor", "base", "unique_code"]
     assert header == expected_header
     assert len(header) == 4
 
@@ -195,16 +199,16 @@ def test_valid_extract_range_data_values():
 
     # Проверки
     assert len(data) == 1
-    assert row[0] == kg.unique_code
-    assert row[1] == "Kilogram"
-    assert row[2] == 1000.0
-    assert row[3] == "Gram"
+    assert row[0] == "Kilogram"
+    assert row[1] == 1000.0
+    assert row[2] == "Gram"
+    assert row[3] == kg.unique_code
 
 
 def test_valid_extract_range_no_base():
     """
-    Проверяет обработку базовой единицы.
-    Ожидаемый результат: в колонке Base выводится 'Not found'.
+    Проверяет обработку единицы измерения без базы.
+    Ожидаемый результат: в колонке base выводится пустая строка.
     """
     # Подготовка
     gram = range_model.create_gram()
@@ -214,7 +218,8 @@ def test_valid_extract_range_no_base():
     row = data[0]
 
     # Проверки
-    assert row[3] == "Not found"
+    assert row[2] == ""
+    assert row[3] == gram.unique_code
 
 
 def test_invalid_extract_unsupported_type_raises_error():

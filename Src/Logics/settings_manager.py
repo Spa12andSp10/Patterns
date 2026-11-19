@@ -1,127 +1,82 @@
 import json
-
 from Src.Core.abstract_manager import abstract_manager
-from Src.Logics.convert_factory import convert_factory
+from Src.Core.exception import base_exception, arguments_exeption
 from Src.Models.settings_model import settings_model
-from Src.Models.organization_model import organization_model
-from Src.Core.validator import validator
+from Src.Logics.settings_deserializer import settings_deserializer
+from Src.Logics.convert_factory import convert_factory
 from Src.Core.abstract_convertor import abstract_convertor
 
 
 class settings_manager(abstract_manager):
-    """Менеджер для работы с настройками (Singleton)."""
+    """Singleton-менеджер настроек приложения."""
 
     __default_file_name = "settings.json"
-    _settings: settings_model = settings_model()
-
-    __required_top_keys = (
-        "organization", "account_name", "boss_name", "first_launch_flag", "response_format"
-    )
-    __required_org_keys = (
-        "name", "inn", "bic", "account", "owner",
-    )
 
     def __new__(cls):
-        """Реализует шаблон Singleton.
-        
-        :return: Единственный экземпляр settings_manager.
-        """
         if not hasattr(cls, "instance"):
             cls.instance = super(settings_manager, cls).__new__(cls)
         return cls.instance
 
-    def load(self, file_name: str = "") -> None:
-        """Загружает настройки из JSON-файла.
-
-        :param file_name: Путь к файлу настроек. Если пусто — ищет settings.json.
-        """
-        inner_file_name = file_name if file_name != "" else self.__default_file_name
-        self._is_loaded = False
-        try:
-            with open(inner_file_name, "r", encoding="utf-8") as file:
-                self._data = json.load(file)
-        except Exception:
-            return
-        self._is_loaded = self.convert()
-
-
-    def save(self, file_name: str = "") -> bool:
-        """Сохраняет «сырые» данные self._data обратно в JSON-файл.
-
-        :param file_name: Путь к файлу. Если пусто — settings.json.
-        :return: True, если запись прошла успешно, иначе False.
-        """
-        inner_file_name = file_name if file_name != "" else self.__default_file_name
-        if not self._data:
-            return False
-        try:
-            with open(inner_file_name, "w", encoding="utf-8") as file:
-                json.dump(self._data, file, ensure_ascii=False, indent=2)
-            return True
-        except OSError:
-            return False
-
-    def save_settings(self, file_name: str = "") -> bool:
-        """Сохраняет текущую модель self._settings в JSON-файл.
-
-        Сериализация доменных моделей делегируется convert_factory,
-        чтобы не дублировать логику обхода property-полей.
-
-        :param file_name: Путь к файлу. Если пусто — settings.json.
-        :return: True, если запись прошла успешно, иначе False.
-        """
-        inner_file_name = file_name if file_name != "" else self.__default_file_name
-        try:
-            walker = convert_factory().create()
-            payload = walker.convert(self._settings)
-            data = json.loads(abstract_convertor.to_json(payload))
-
-            with open(inner_file_name, "w", encoding="utf-8") as file:
-                json.dump(data, file, ensure_ascii=False, indent=2)
-
-            self._data = data
-            return True
-        except OSError:
-            return False
-
-
-    def convert(self) -> bool:
-        """Преобразует «сырые» данные JSON в settings_model.
-
-        :return: True, если преобразование прошло успешно.
-        """
-        validator.require_keys(self._data, self.__required_top_keys, field="settings")
-
-        org_data = self._data["organization"]
-        validator.require_dict(org_data, field="organization")
-        validator.require_keys(org_data, self.__required_org_keys, field="organization")
-
-        org = organization_model.create(
-            name=org_data["name"],
-            inn=org_data["inn"],
-            bic=org_data["bic"],
-            account=org_data["account"],
-            owner=org_data["owner"],
-        )
-
-        self._settings.organization = org
-        self._settings.account_name = self._data["account_name"]
-        self._settings.boss_name = self._data["boss_name"]
-        self._settings.first_launch_flag = self._data["first_launch_flag"]
-        self._settings.response_format = self._data["response_format"]
-        return True
+    def __init__(self):
+        if not hasattr(self, "_initialized"):
+            self._initialized = True
+            self._settings: settings_model = None
+            self._file_name: str = self.__default_file_name
+            self._is_loaded: bool = False
 
     @property
     def settings(self) -> settings_model:
-        """Возвращает модель настроек."""
+        """Возвращает модель настроек (или пустую с дефолтами, если не загружено)."""
+        if self._settings is None:
+            self._settings = settings_model()
         return self._settings
 
     @settings.setter
-    def settings(self, value: settings_model):
-        """Устанавливает модель настроек."""
+    def settings(self, value: settings_model) -> None:
+        if not isinstance(value, settings_model):
+            raise arguments_exeption("settings", "Ожидалась settings_model")
         self._settings = value
+        self._is_loaded = True
 
     @property
-    def data(self) -> dict:
-        """Возвращает словарь с «сырыми» данными из JSON."""
-        return self._data
+    def is_loaded(self) -> bool:
+        return self._is_loaded
+
+    @property
+    def file_name(self) -> str:
+        return self._file_name
+
+    def load(self, file_name: str = "") -> bool:
+        """Загружает настройки из файла через settings_deserializer."""
+        inner = file_name or self._file_name
+        model = settings_deserializer.load(inner)
+        if model is None:
+            return False
+
+        self._settings = model
+        self._file_name = inner
+        self._is_loaded = True
+        return True
+
+    def reload(self) -> bool:
+        """Перечитывает настройки из того же файла."""
+        return self.load(self._file_name)
+
+    def save(self, file_name: str = "") -> bool:
+        """Сохраняет настройки в файл через общий механизм walker."""
+        if self._settings is None:
+            return False
+
+        inner = file_name or self._file_name
+
+        try:
+            walker = convert_factory().create()
+            raw = walker.convert(self._settings)
+            data = json.loads(abstract_convertor.to_json(raw))
+            with open(inner, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except (OSError, base_exception):
+            return False
+
+        self._file_name = inner
+        return True
