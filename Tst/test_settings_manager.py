@@ -1,8 +1,5 @@
-import pytest
-
 from pathlib import Path
 from Src.Logics.settings_manager import settings_manager
-from Src.Core.exception import arguments_exeption
 
 
 def _settings_path() -> str:

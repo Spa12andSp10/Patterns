@@ -1,8 +1,6 @@
 import json
 from datetime import date, datetime
 
-import pytest
-
 from Src.Logics.convert_factory import convert_factory
 from Src.Models.group_model import group_model
 from Src.Models.nomenclature_model import nomenclature_model

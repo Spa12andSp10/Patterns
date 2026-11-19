@@ -1,14 +1,11 @@
 from Src.Core.entity_model import entity_model
-from Src.Core.validator import validator
 from Src.Core.exception import arguments_exeption
 
 
 class report_data_dto(entity_model):
     """DTO для табличных данных отчёта.
 
-    Хранит заголовки таблицы и строки данных. Используется всеми
-    форматами отчётов (TXT, HTML, CSV, XML, Markdown, PNG) как
-    универсальный промежуточный формат.
+    Хранит заголовки таблицы и строки данных.
     """
 
     __header: list = []

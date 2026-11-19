@@ -51,6 +51,7 @@ class storage_persistence:
         payload = {
             "groups":       [serializer.convert(g) for g in self._storage.groups],
             "ranges":       [serializer.convert(r) for r in self._storage.ranges],
+            "transactions": [serializer.convert(t) for t in self._storage.transactions],
             "nomenclature": [serializer.convert(n) for n in self._storage.nomenclatures],
             "warehouse":    [serializer.convert(w) for w in self._storage.warehouses],
             "recipes":      [serializer.convert(r) for r in self._storage.recipes],

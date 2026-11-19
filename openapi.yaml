@@ -282,6 +282,75 @@ components:
         preparation_method:
           "Durum wheat pasta": {"value": "boil"}
 
+    FilterCondition:
+      type: object
+      required: [filter_name]
+      properties:
+        filter_name:
+          type: string
+          description: |
+            Путь к полю: name, unique_code, value, conversion_factor,
+            group.name, range.base.name, ingredients[].name.
+            Для alphabet/alphabet_desc это поле сортировки.
+          example: name
+        filter_value:
+          type: string
+          description: |
+            Искомое значение. Обязательно для equals, like и between.
+            Для between задаётся диапазон через `..` (например,
+            `1..10` или `apple..milk`); запятая тоже поддерживается.
+          example: milk
+        filter_type:
+          type: string
+          enum:
+            - equals
+            - like
+            - between
+            - alphabet
+            - alphabet_desc
+            - reverse_alphabet
+            - alphabet_reverse
+          default: equals
+          description: |
+            `equals`, `like` — отбор; `between` — диапазон;
+            `alphabet` — сортировка по возрастанию;
+            `alphabet_desc` (алиасы: `reverse_alphabet`,
+            `alphabet_reverse`) — сортировка по убыванию.
+
+    FilterRequest:
+      type: object
+      properties:
+        filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterCondition'
+
+    FilterResponse:
+      type: object
+      properties:
+        type:
+          type: string
+        count:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    ReportTable:
+      type: object
+      properties:
+        header:
+          type: array
+          items:
+            type: string
+        rows:
+          type: array
+          items:
+            type: array
+            items: {}
+
   responses:
 
     BadRequest:
@@ -648,6 +717,36 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
     
+  /api/osv:
+    post:
+      summary: Оборотно-сальдовая ведомость
+      description: |
+        Формирует ОСВ по всем транзакциям с учётом фильтрации.
+        Положительное `value` — приход (debit), отрицательное — расход (credit).
+        `filter_name` для транзакций: `unique_code`, `value`,
+        `period`, `nomenclatures.name`, `nomenclatures.unique_code`,
+        `warehouses.name`, `warehouses.unique_code`, `ranges.name`,
+        `ranges.unique_code`. Поддерживаются `between`, `alphabet`
+        и `alphabet_desc` (сортировка строк ОСВ).
+      operationId: main.osv_report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FilterRequest'
+      responses:
+        '200':
+          description: ОСВ в формате report_data_dto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportTable'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /api/{entity_type}:
     post:
       summary: Создать сущность
@@ -655,8 +754,6 @@ paths:
         Создаёт новый экземпляр модели (`group`, `range`, `warehouse`,
         `nomenclature`, `recipe`) с `unique_code`, который сгенерировался самостоятельно.
 
-        Поле `entity_type` **обязательно** должно быть в теле — это требование `discriminator`,
-        который выбирает нужную схему тела по его значению.
 
       operationId: main.create_entity
       parameters:
@@ -752,3 +849,47 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+  
+  /api/filter/{entity_type}:
+    post:
+      summary: Фильтрация DOMAIN-моделей
+      description: |
+        Фильтрует сущности выбранного типа по DTO фильтрации.
+        Тип модели задаётся в пути, условия — в теле запроса.
+
+        Поддерживаются `equals`, `like`, `between`, `alphabet`
+        и `alphabet_desc`. `between` принимает диапазон через `..`
+        (например, `1..10`, `apple..milk`), `alphabet` сортирует
+        результат по возрастанию, `alphabet_desc` — по убыванию.
+      operationId: main.filter_entities
+      parameters:
+        - name: entity_type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [nomenclature, group, range, recipe]
+          description: Тип DOMAIN-модели.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FilterRequest'
+            example:
+              filters:
+                - filter_name: name
+                  filter_value: milk
+                  filter_type: like
+      responses:
+        '200':
+          description: Результат фильтрации.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FilterResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
