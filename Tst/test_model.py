@@ -26,7 +26,7 @@ def test_valid_result_checking_validate():
     validator.validate(value, expected_type, name, min_len, max_len)
 
     # Проверки
-    # (исключение не возникло — тест пройден)
+    # исключение не возникло — тест пройден
 
 
 def test_invalid_result_value_is_none():
@@ -37,9 +37,12 @@ def test_invalid_result_value_is_none():
     # Подготовка
     value = None
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         validator.validate(value, str, "test", 8)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_value_is_empty():
@@ -50,9 +53,12 @@ def test_invalid_result_value_is_empty():
     # Подготовка
     value = ""
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         validator.validate(value, str, "test", 8)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_incorrect_type():
@@ -65,9 +71,12 @@ def test_invalid_result_incorrect_type():
     value = "for_test"
     expected_type = int
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         validator.validate(value, expected_type, "test", 8)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_incorrect_length():
@@ -80,9 +89,12 @@ def test_invalid_result_incorrect_length():
     value = "for_test"
     expected_len = 4
 
-    # Действие и проверки
-    with pytest.raises(length_exeption):
+    # Действие
+    with pytest.raises(length_exeption) as exc_info:
         validator.validate(value, str, "test", expected_len)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_incorrect_max_length():
@@ -96,9 +108,12 @@ def test_invalid_result_incorrect_max_length():
     min_len = 12
     max_len = 10
 
-    # Действие и проверки
-    with pytest.raises(max_length_exeption):
+    # Действие
+    with pytest.raises(max_length_exeption) as exc_info:
         validator.validate(value, str, "test", min_len, max_len)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_valid_result_value_is_digit():
@@ -114,7 +129,7 @@ def test_valid_result_value_is_digit():
     validator.digit_validate(value)
 
     # Проверки
-    # (исключение не возникло — тест пройден)
+    # исключение не возникло — тест пройден
 
 
 def test_invalid_result_value_is_not_digit():
@@ -126,9 +141,12 @@ def test_invalid_result_value_is_not_digit():
     # Подготовка
     value = "12345test"
 
-    # Действие и проверки
-    with pytest.raises(validation_exeption):
+    # Действие
+    with pytest.raises(validation_exeption) as exc_info:
         validator.digit_validate(value)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_valid_result_correct_inn():
@@ -144,7 +162,7 @@ def test_valid_result_correct_inn():
     validator.check_inn(inn)
 
     # Проверки
-    # (исключение не возникло — тест пройден)
+    # исключение не возникло — тест пройден
 
 
 def test_invalid_result_incorrect_inn():
@@ -156,9 +174,12 @@ def test_invalid_result_incorrect_inn():
     # Подготовка
     inn = "7707083894"
 
-    # Действие и проверки
-    with pytest.raises(validation_exeption):
+    # Действие
+    with pytest.raises(validation_exeption) as exc_info:
         validator.check_inn(inn)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_valid_result_correct_account():
@@ -175,7 +196,7 @@ def test_valid_result_correct_account():
     validator.check_account(account, bic)
 
     # Проверки
-    # (исключение не возникло — тест пройден)
+    # исключение не возникло — тест пройден
 
 
 def test_invalid_result_incorrect_account():
@@ -188,9 +209,12 @@ def test_invalid_result_incorrect_account():
     account = "40702810600000000000"
     bic = "044525225"
 
-    # Действие и проверки
-    with pytest.raises(validation_exeption):
+    # Действие
+    with pytest.raises(validation_exeption) as exc_info:
         validator.check_account(account, bic)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_valid_result_value_greater_or_equal_than_zero():
@@ -206,7 +230,7 @@ def test_valid_result_value_greater_or_equal_than_zero():
     validator.no_lower_that_zero_validate(value)
 
     # Проверки
-    # (исключение не возникло — тест пройден)
+    # исключение не возникло — тест пройден
 
 
 def test_invalid_result_value_lower_than_zero():
@@ -218,6 +242,9 @@ def test_invalid_result_value_lower_than_zero():
     # Подготовка
     value = -1
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         validator.no_lower_that_zero_validate(value)
+
+    # Проверки
+    assert exc_info.value is not None

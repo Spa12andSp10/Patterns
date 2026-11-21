@@ -77,6 +77,9 @@ class storage_bootstrap:
         self._load_section(data.get("recipes", []),
                            "add_recipe", None)
 
+        self._load_section(data.get("transactions", []),
+                           "add_transaction", None)
+
         return True
 
     def first_start(self, file_name: str = "") -> bool:

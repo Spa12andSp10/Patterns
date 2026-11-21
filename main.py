@@ -9,11 +9,20 @@ from Src.Dtos.report_type_enum import report_type_enum
 from Src.Logics.deserialize_factory import deserialize_factory
 from Src.Logics.entity_resolver import entity_resolver
 from Src.Logics.reference_finder import reference_finder
+from Src.Logics.report_data_extractor import report_data_extractor
 from Src.Logics.report_factory import report_factory
 from Src.Logics.settings_manager import settings_manager
 from Src.Logics.storage_manager import storage_manager
+from Src.Dtos.filter_dto import filter_dto
+from Src.Logics.convert_factory import convert_factory
+from Src.Logics.prototype import prototype
+from Src.Logics.turnover_prototype import turnover_prototype
 
 api = connexion.FlaskApp(__name__)
+
+FILTER_DOMAINS = {
+    item.value for item in filter_dto.SUPPORTED_DOMAINS
+}
 
 
 
@@ -89,6 +98,18 @@ def _send_binary(result, file_name: str):
         as_attachment=True,
         download_name=file_name,
     )
+
+
+def _send_report_file(result, file_name: str):
+    """Отдаёт результат отчёта файлом в любом формате из настроек."""
+    if result.is_binary:
+        return _send_binary(result, file_name)
+
+    response = Response(result.text, status=200, content_type=result.mime)
+    response.headers["Content-Disposition"] = (
+        f'attachment; filename="{file_name}"'
+    )
+    return response
 
 
 def _resolve_or_error(entity_type: str, code: str):
@@ -309,7 +330,7 @@ def get_formats():
 
 @api.route("/api/<entity_type>/<code>", methods=["PUT"])
 def create_entity_with_code(entity_type: str, code: str):
-    """Созхдает сущность по коду, который задлал пользователь"""
+    """Создаёт сущность по коду, который задал пользователь"""
     supported = resolver.supported_types()
     if entity_type not in supported:
         return (
@@ -480,7 +501,68 @@ def update(code: str):
 
     return "", 200
 
+@api.route("/api/filter/<entity_type>", methods=["POST"])
+def filter_entities(entity_type: str):
+    domain = (entity_type or "").strip().lower()
+
+    if domain not in FILTER_DOMAINS:
+        return (
+            f"Неизвестный тип: {domain!r}. "
+            f"Допустимые: {sorted(FILTER_DOMAINS)}"
+        ), 400
+
+    body = request.get_json(silent=True)
+    if body is None:
+        body = {}
+    if not isinstance(body, dict):
+        return "Тело должно быть JSON-объектом", 400
+
+    try:
+        filters = filter_dto.from_dict(body, domain=domain)
+    except arguments_exeption as e:
+        return str(e), 400
+
+    try:
+        data = resolver.provider_for(domain)()
+        filtered = prototype(data).clone(filters)
+
+        walker = convert_factory().create()
+        items = [walker.convert(item) for item in filtered.data]
+    except arguments_exeption as e:
+        return str(e), 400
+    except Exception as e:
+        return str(e), 500
+
+    return {"type": domain, "count": len(items), "items": items}, 200
+
+@api.route("/api/osv", methods=["POST"])
+def osv_report():
+    """Формирует ОСВ файлом в формате из настроек (по умолчанию CSV)."""
+    body = request.get_json(silent=True)
+    if body is None:
+        body = {}
+    if not isinstance(body, dict):
+        return "Тело должно быть JSON-объектом", 400
+
+    try:
+        settings_manager_instance.reload()
+        filters = filter_dto.from_dict(body, domain="")
+        filtered = turnover_prototype(storage.transactions).clone(filters)
+
+        table = report_data_extractor.extract(filtered.data)
+        result = factory.create_default().build(table)
+
+        fmt = _parse_report_type(
+            settings_manager_instance.settings.response_format
+        )
+    except arguments_exeption as e:
+        return str(e), 400
+    except Exception as e:
+        return f"Ошибка формирования ОСВ: {str(e)}", 500
+
+    return _send_report_file(result, f"osv.{fmt.slug}")
+
 
 if __name__ == "__main__":
     api.add_api('openapi.yaml')
-    api.run(host="0.0.0.0", port=1111)
+    api.run(host="127.0.0.1", port=1111)

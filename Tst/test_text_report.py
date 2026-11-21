@@ -61,7 +61,10 @@ def test_invalid_result_name3():
     rf = report_factory()
 
     # Действие
-    rf.create(report_type_enum.CSV)
+    result = rf.create(report_type_enum.CSV)
+
+    # Проверки
+    assert result is not None
 
 
 def test_valud_result_name4():

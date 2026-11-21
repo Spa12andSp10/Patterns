@@ -5,8 +5,8 @@ from Src.Models.group_model import group_model
 from Src.Models.ingredient_model import ingredient_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
-from Src.Models.technicalmap_model import technicalmap_model
 from Src.Models.warehouse_model import warehouse_model
+from Src.Models.transaction_model import transaction_model
 
 
 class storage_manager(abstract_manager):
@@ -26,6 +26,7 @@ class storage_manager(abstract_manager):
             self._ranges = []
             self._recipes = []
             self._ingredients = []
+            self._transactions = []
             self._is_loaded = False
 
     def load(self, models_file: str = "", raw_file: str = "") -> bool:
@@ -37,7 +38,7 @@ class storage_manager(abstract_manager):
         """
         if self._is_loaded:
             return True
-        # Библиотеки объявлены в функции, чтоьы избежать цикла
+        # Библиотеки объявлены в функции, чтобы избежать цикла
         from Src.Logics.storage_deserializer import storage_deserializer
         from Src.Logics.storage_bootstrap import storage_bootstrap
 
@@ -81,6 +82,10 @@ class storage_manager(abstract_manager):
     def ingredients(self) -> list:
         return self._ingredients
 
+    @property
+    def transactions(self) -> list:
+        return self._transactions
+
     @staticmethod
     def _is_unique(items: list, candidate) -> bool:
         name = getattr(candidate, "name", None)
@@ -121,6 +126,12 @@ class storage_manager(abstract_manager):
     def add_ingredient(self, value: ingredient_model) -> bool:
         if self._is_unique(self._ingredients, value):
             self._ingredients.append(value)
+            return True
+        return False
+
+    def add_transaction(self, value: transaction_model) -> bool:
+        if self._is_unique(self._transactions, value):
+            self._transactions.append(value)
             return True
         return False
 

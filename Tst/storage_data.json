@@ -117,5 +117,49 @@
       "Butter": "fry"
     }
   }
+],
+"transactions": [
+  {
+    "nomenclatures": "Milk",
+    "warehouses": "Main warehouse",
+    "ranges": "liter",
+    "value": 10,
+    "period": "2026-01-15"
+  },
+  {
+    "nomenclatures": "Milk",
+    "warehouses": "Main warehouse",
+    "ranges": "liter",
+    "value": -4,
+    "period": "2026-01-16"
+  },
+  {
+    "nomenclatures": "Beef",
+    "warehouses": "Main warehouse",
+    "ranges": "kilogram",
+    "value": 7.5,
+    "period": "2026-01-17"
+  },
+  {
+    "nomenclatures": "Apple",
+    "warehouses": "Auxiliary warehouse",
+    "ranges": "kilogram",
+    "value": -2.5,
+    "period": "2026-01-18"
+  },
+  {
+    "nomenclatures": "Pasta",
+    "warehouses": "Auxiliary warehouse",
+    "ranges": "gram",
+    "value": 500,
+    "period": "2026-01-19"
+  },
+  {
+    "nomenclatures": "Cloche",
+    "warehouses": "Main warehouse",
+    "ranges": "gram",
+    "value": -10,
+    "period": "2026-01-20"
+  }
 ]
 }

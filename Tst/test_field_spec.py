@@ -100,9 +100,12 @@ def test_invalid_result_field_spec_bad_name(value):
     # Подготовка
     name = value
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         field_spec(name)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_field_spec_unknown_kind():
@@ -114,9 +117,12 @@ def test_invalid_result_field_spec_unknown_kind():
     name = "name"
     kind = "unknown"
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         field_spec(name, kind)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 @pytest.mark.parametrize("value", [object(), 1, "group_model"])
@@ -129,9 +135,12 @@ def test_invalid_result_field_spec_bad_model_cls(value):
     name = "name"
     model_cls = value
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         field_spec(name, model_cls=model_cls)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 @pytest.mark.parametrize("value", [1, "str", object()])
@@ -144,9 +153,12 @@ def test_invalid_result_field_spec_bad_cast(value):
     name = "name"
     cast = value
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         field_spec(name, cast=cast)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 @pytest.mark.parametrize("value", [(), [], "alias", None])
@@ -167,9 +179,11 @@ def test_invalid_result_field_spec_aliases_must_be_tuple(value):
         assert spec.aliases == aliases
         return
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    with pytest.raises(arguments_exeption) as exc_info:
         field_spec(name, aliases=aliases)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 @pytest.mark.parametrize("value", [1, 0, "true", None])
@@ -182,6 +196,9 @@ def test_invalid_result_field_spec_required_must_be_bool(value):
     name = "name"
     required = value
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         field_spec(name, required=required)
+
+    # Проверки
+    assert exc_info.value is not None

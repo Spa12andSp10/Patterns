@@ -1,8 +1,6 @@
 import json
 from datetime import date, datetime
 
-import pytest
-
 from Src.Logics.convert_factory import convert_factory
 from Src.Models.group_model import group_model
 from Src.Models.nomenclature_model import nomenclature_model
@@ -296,7 +294,7 @@ def test_valid_result_factory_cycle_protection():
 
 def test_valid_result_factory_chain_not_cycle():
     """
-    Проверяет цепочку range_model (tonna → kilogram → gram) без цикла.
+    Проверяет цепочку range_model (tonna -> kilogram ->gram) без цикла.
     Ожидаемый результат: цепочка раскрывается, base — компактное описание.
     """
     # Подготовка

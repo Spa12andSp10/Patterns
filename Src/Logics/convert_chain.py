@@ -1,5 +1,5 @@
 class convert_chain:
-    """Цепочка отвественностей"""
+    """Цепочка ответственностей"""
 
     def __init__(self):
         self._handlers: list = []

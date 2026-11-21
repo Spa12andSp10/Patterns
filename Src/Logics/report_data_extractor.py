@@ -6,34 +6,54 @@ from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
 from Src.Models.ingredient_model import ingredient_model
 from Src.Models.technicalmap_model import technicalmap_model
+from Src.Models.transaction_model import transaction_model
 
 
 class report_data_extractor:
-    """Преобразует доменную модель в табличные данные (header + rows).
+    """Преобразует доменные данные в табличные (header + rows).
 
     Поддерживаемые типы: technicalmap_model, ingredient_model,
-    nomenclature_model, range_model, group_model, warehouse_model.
+    nomenclature_model, range_model, group_model, warehouse_model,
+    список транзакций (оборотно-сальдовая ведомость).
 
     Порядок isinstance-проверок важен:
-      - technicalmap_model — до ingredient/nomenclature (у него свои поля);
-      - ingredient_model — ДО nomenclature_model (это его наследник);
-      - nomenclature_model — до range_model (не пересекаются, но порядок
-        фиксированный);
-      - group_model и warehouse_model — листья, в конце.
+      - technicalmap_model — до ingredient/nomenclature;
+      - ingredient_model — ДО nomenclature_model;
+      - nomenclature_model — до range_model;
+      - group_model и warehouse_model.
+      - список транзакций проверяется до одиночных моделей.
     """
+
+    TRANSACTION_HEADER = [
+        "nomenclature",
+        "warehouse",
+        "range",
+        "opening_balance",
+        "debit",
+        "credit",
+        "closing_balance",
+    ]
 
     @staticmethod
     def extract(source) -> report_data_dto:
         """Строит табличные данные по доменной модели.
 
-        :param source: Доменная модель.
+        :param source: Доменная модель, список транзакций или report_data_dto.
         :return: DTO с header и rows.
         :raises arguments_exeption: Если тип не поддерживается.
         """
+        if isinstance(source, report_data_dto):
+            return source
+
+        if isinstance(source, (list, tuple)) and (
+            not source
+            or all(isinstance(item, transaction_model) for item in source)
+        ):
+            return report_data_extractor._from_transactions(source)
+
         if isinstance(source, technicalmap_model):
             return report_data_extractor._from_recipe(source)
 
-        # ingredient_model наследует nomenclature_model — проверяем раньше
         if isinstance(source, ingredient_model):
             return report_data_extractor._from_ingredient(source)
 
@@ -148,3 +168,74 @@ class report_data_extractor:
         header = ["name", "address", "unique_code"]
         rows = [[source.name, source.address, source.unique_code]]
         return report_data_dto.create(header=header, rows=rows)
+
+    @staticmethod
+    def _from_transactions(source: list) -> report_data_dto:
+        """ОСВ: группировка движений по номенклатуре, складу и единице.
+
+        Положительное ``value`` — приход (debit), отрицательное — расход
+        (credit). ``opening_balance`` всегда 0, ``closing_balance`` равен
+        разности debit и credit. Завершающая строка «ИТОГО» добавляется,
+        только если есть движения.
+
+        :param source: Список транзакций (может быть пустым).
+        :return: DTO с header и rows.
+        """
+        groups = {}
+
+        for item in source:
+            key = (
+                item.nomenclatures.unique_code,
+                item.warehouses.unique_code,
+                item.ranges.unique_code,
+            )
+            group = groups.setdefault(key, {
+                "nomenclature": item.nomenclatures.name,
+                "warehouse": item.warehouses.name,
+                "range": item.ranges.name,
+                "opening_balance": 0.0,
+                "debit": 0.0,
+                "credit": 0.0,
+            })
+
+            if item.value >= 0:
+                group["debit"] += item.value
+            else:
+                group["credit"] += abs(item.value)
+
+        rows = []
+        total_debit = 0.0
+        total_credit = 0.0
+
+        for group in groups.values():
+            debit = round(group["debit"], 2)
+            credit = round(group["credit"], 2)
+            closing = round(debit - credit, 2)
+
+            rows.append([
+                group["nomenclature"],
+                group["warehouse"],
+                group["range"],
+                group["opening_balance"],
+                debit,
+                credit,
+                closing,
+            ])
+
+            total_debit += debit
+            total_credit += credit
+
+        if rows:
+            total_debit = round(total_debit, 2)
+            total_credit = round(total_credit, 2)
+            rows.append([
+                "ИТОГО", "", "", 0.0,
+                total_debit,
+                total_credit,
+                round(total_debit - total_credit, 2),
+            ])
+
+        return report_data_dto.create(
+            header=report_data_extractor.TRANSACTION_HEADER,
+            rows=rows,
+        )
