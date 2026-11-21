@@ -33,81 +33,9 @@ def _transaction(nomenclature, warehouse, unit, value, day=1):
     )
 
 
-def test_build_empty_returns_only_header():
-    """Без транзакций возвращается пустая таблица с заголовком."""
-    report = turnover_prototype([]).build()
-
-    assert report.header == turnover_prototype.HEADER
-    assert report.rows == []
-
-
-def test_build_groups_debit_and_credit():
-    """Приход и расход группируются в одну строку."""
-    milk, _, main, _, unit = _references()
-    data = [
-        _transaction(milk, main, unit, 10, 1),
-        _transaction(milk, main, unit, -4, 2),
-    ]
-
-    report = turnover_prototype(data).build()
-
-    assert report.rows == [
-        ["Milk", "Main warehouse", "liter", 0.0, 10.0, 4.0, 6.0],
-        ["ИТОГО", "", "", 0.0, 10.0, 4.0, 6.0],
-    ]
-
-
-def test_build_separates_groups_by_warehouse():
-    """Одинаковая номенклатура на разных складах даёт разные строки."""
-    milk, _, main, auxiliary, unit = _references()
-    data = [
-        _transaction(milk, main, unit, 10, 1),
-        _transaction(milk, auxiliary, unit, -3, 2),
-    ]
-
-    report = turnover_prototype(data).build()
-
-    assert len(report.rows) == 3
-    assert report.rows[0] == [
-        "Milk", "Main warehouse", "liter", 0.0, 10.0, 0.0, 10.0,
-    ]
-    assert report.rows[1] == [
-        "Milk", "Auxiliary warehouse", "liter", 0.0, 0.0, 3.0, -3.0,
-    ]
-    assert report.rows[2] == [
-        "ИТОГО", "", "", 0.0, 10.0, 3.0, 7.0,
-    ]
-
-
-def test_build_separates_groups_by_nomenclature():
-    """Разная номенклатура на одном складе даёт разные строки."""
-    milk, apple, main, _, unit = _references()
-    data = [
-        _transaction(milk, main, unit, 4, 1),
-        _transaction(apple, main, unit, 7, 2),
-    ]
-
-    report = turnover_prototype(data).build()
-
-    assert [row[0] for row in report.rows] == ["Milk", "Apple", "ИТОГО"]
-
-
-def test_build_rounds_values_to_two_digits():
-    """Дробные значения округляются до двух знаков."""
-    milk, _, main, _, unit = _references()
-    data = [
-        _transaction(milk, main, unit, 1.005, 1),
-        _transaction(milk, main, unit, 0.004, 2),
-    ]
-
-    report = turnover_prototype(data).build()
-
-    assert report.rows[0][4] == 1.01
-    assert report.rows[0][6] == 1.01
-
-
 def test_clone_filters_by_nomenclature_name():
     """clone фильтрует транзакции по вложенному пути номенклатуры."""
+    # Подготовка
     milk, apple, main, _, unit = _references()
     data = [
         _transaction(milk, main, unit, 10, 1),
@@ -115,14 +43,17 @@ def test_clone_filters_by_nomenclature_name():
     ]
     filters = filter_dto.path_filter("nomenclatures.name", "milk")
 
-    report = turnover_prototype(data).clone(filters).build()
+    # Действие
+    result = turnover_prototype(data).clone(filters)
 
-    assert [row[0] for row in report.rows] == ["Milk", "ИТОГО"]
-    assert report.rows[0][4] == 10.0
+    # Проверки
+    assert len(result.data) == 1
+    assert result.data[0].nomenclatures.name == "Milk"
 
 
 def test_clone_filters_by_warehouse_name():
     """clone фильтрует транзакции по вложенному пути склада."""
+    # Подготовка
     milk, _, main, auxiliary, unit = _references()
     data = [
         _transaction(milk, main, unit, 10, 1),
@@ -130,15 +61,19 @@ def test_clone_filters_by_warehouse_name():
     ]
     filters = filter_dto.path_filter("warehouses.name", "auxiliary")
 
-    report = turnover_prototype(data).clone(filters).build()
+    # Действие
+    result = turnover_prototype(data).clone(filters)
 
-    assert len(report.rows) == 2
-    assert report.rows[0][1] == "Auxiliary warehouse"
-    assert report.rows[0][4] == 5.0
+    # Проверки
+    assert [item.warehouses.name for item in result.data] == [
+        "Auxiliary warehouse",
+    ]
+    assert result.data[0].value == 5.0
 
 
 def test_clone_does_not_mutate_source():
     """clone не меняет исходный прототип."""
+    # Подготовка
     milk, apple, main, _, unit = _references()
     data = [
         _transaction(milk, main, unit, 10, 1),
@@ -146,17 +81,22 @@ def test_clone_does_not_mutate_source():
     ]
     source = turnover_prototype(data)
 
+    # Действие
     source.clone(filter_dto.name_filter("milk"))
 
+    # Проверки
     assert len(source.data) == 2
 
 
 def test_clone_without_filters_copies_data():
     """clone без фильтров возвращает копию данных."""
+    # Подготовка
     milk, _, main, _, unit = _references()
     source = turnover_prototype([_transaction(milk, main, unit, 1)])
 
+    # Действие
     copy = source.clone()
 
+    # Проверки
     assert copy is not source
     assert copy.data == source.data

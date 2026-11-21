@@ -417,6 +417,11 @@ components:
       description: |
         Бинарный файл отчёта (CSV, Markdown, PNG).
         Имя файла — `<name>.<slug>`.
+      headers:
+        Content-Disposition:
+          description: Указывает браузеру скачать ответ как файл.
+          schema:
+            type: string
       content:
         text/csv:
           schema:
@@ -719,9 +724,12 @@ paths:
     
   /api/osv:
     post:
-      summary: Оборотно-сальдовая ведомость
+      summary: Оборотно-сальдовая ведомость (скачивание файла)
       description: |
-        Формирует ОСВ по всем транзакциям с учётом фильтрации.
+        Формирует ОСВ по всем транзакциям с учётом фильтрации и возвращает
+        файл в формате из настроек (`settings.json`, сейчас CSV) с заголовком
+        `Content-Disposition: attachment`. Таблица собирается в
+        `report_data_dto`, затем передаётся в фабрику отчётов.
         Положительное `value` — приход (debit), отрицательное — расход (credit).
         `filter_name` для транзакций: `unique_code`, `value`,
         `period`, `nomenclatures.name`, `nomenclatures.unique_code`,
@@ -737,11 +745,7 @@ paths:
               $ref: '#/components/schemas/FilterRequest'
       responses:
         '200':
-          description: ОСВ в формате report_data_dto.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReportTable'
+          $ref: '#/components/responses/BinaryFile'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':

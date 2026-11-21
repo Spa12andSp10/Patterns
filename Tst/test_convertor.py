@@ -43,8 +43,6 @@ def _make_composite():
     return Composite()
 
 
-# --- basic_convertor ---
-
 def test_valid_result_basic_string():
     """
     Проверяет конвертацию строкового примитива.
@@ -133,9 +131,12 @@ def test_invalid_result_basic_none():
     # Подготовка
     conv = basic_convertor()
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         conv.convert(None)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_valid_result_basic_model_fields():
@@ -241,7 +242,6 @@ def test_valid_result_basic_no_simple_fields():
     assert result == {}
 
 
-# --- datetime_convertor ---
 
 def test_valid_result_datetime_primitive():
     """
@@ -283,9 +283,12 @@ def test_invalid_result_datetime_none():
     # Подготовка
     conv = datetime_convertor()
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         conv.convert(None)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_time_and_timedelta_are_not_dates():
@@ -316,7 +319,7 @@ def test_invalid_result_time_and_timedelta_are_not_dates():
 
 def test_valid_result_datetime_model_all_dates():
     """
-    Проверяет, что в результат попадают ВСЕ даты модели, а не первая.
+    Проверяет, что в результат попадают все даты модели, а не первая.
     Ожидаемый результат: словарь с двумя полями-датами в ISO-формате.
     """
     # Подготовка
@@ -399,9 +402,6 @@ def test_valid_result_datetime_broken_getter_skipped():
     assert "bad" not in result
     assert result["good"] == "2024-03-03"
 
-
-# --- reference_convertor ---
-
 def test_valid_result_reference_group_model():
     """
     Проверяет конвертацию одиночной ссылочной модели.
@@ -430,9 +430,12 @@ def test_invalid_result_reference_none():
     # Подготовка
     conv = reference_convertor()
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         conv.convert(None)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_reference_plain_string():
@@ -548,8 +551,6 @@ def test_valid_result_reference_broken_getter_skipped():
     assert result["good"]["name"] == "ok"
 
 
-# --- JSON-сериализация отдельных конвертеров ---
-
 def test_valid_result_basic_to_json_roundtrip():
     """
     Проверяет сериализацию результата basic_convertor в JSON.
@@ -656,8 +657,6 @@ def test_valid_result_reference_nomenclature_json():
     assert parsed["value"]["unique_code"] == nom.unique_code
     assert parsed["value"]["type"] == "product"
 
-
-# --- Совместная работа трёх конвертеров ---
 
 def test_valid_result_composite_basic_part():
     """

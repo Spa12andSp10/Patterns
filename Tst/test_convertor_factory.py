@@ -294,7 +294,7 @@ def test_valid_result_factory_cycle_protection():
 
 def test_valid_result_factory_chain_not_cycle():
     """
-    Проверяет цепочку range_model (tonna → kilogram → gram) без цикла.
+    Проверяет цепочку range_model (tonna -> kilogram ->gram) без цикла.
     Ожидаемый результат: цепочка раскрывается, base — компактное описание.
     """
     # Подготовка

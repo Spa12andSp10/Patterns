@@ -20,7 +20,8 @@ def test_valid_result_abstract_model_unique_code_not_empty():
     Проверяет автоматическую генерацию уникального кода у объекта базовой модели.
     Ожидаемый результат: unique_code не является пустой строкой.
     """
-    # Подготовка и действие
+    # Подготовка
+    # Действие
     entity = dummy_entity()
 
     # Проверки
@@ -33,7 +34,8 @@ def test_valid_result_abstract_model_unique_code_is_unique():
     базовой модели.
     Ожидаемый результат: два разных объекта получают разные значения unique_code.
     """
-    # Подготовка и действие
+    # Подготовка
+    # Действие
     en1 = dummy_entity()
     en2 = dummy_entity()
 
@@ -66,9 +68,12 @@ def test_invalid_result_entity_model_name_empty():
     # Подготовка
     entity = dummy_entity_model()
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         entity.name = ""
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_entity_model_name_whitespace():
@@ -81,9 +86,12 @@ def test_invalid_result_entity_model_name_whitespace():
     # Подготовка
     entity = dummy_entity_model()
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         entity.name = "   "
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 @pytest.mark.parametrize("value", [None, 123, [], {}, True])
@@ -96,6 +104,9 @@ def test_invalid_result_entity_model_name_type(value):
     # Подготовка
     entity = dummy_entity_model()
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         entity.name = value
+
+    # Проверки
+    assert exc_info.value is not None

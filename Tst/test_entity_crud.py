@@ -27,6 +27,7 @@ def clean_storage():
     storage._ingredients.clear()
     yield
 
+
 def test_create_group_success(client):
     """
     Проверяет успешное создание группы через POST.
@@ -51,7 +52,7 @@ def test_create_group_fail_missing_name(client):
     Ожидаемый результат: статус 400 (ошибка валидации).
     """
     # Подготовка
-    payload = {"entity_type": "group"}  # нет поля name
+    payload = {"entity_type": "group"}
 
     # Действие
     response = client.post("/api/group", json=payload)

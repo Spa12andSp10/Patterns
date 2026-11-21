@@ -9,6 +9,7 @@ from Src.Dtos.report_type_enum import report_type_enum
 from Src.Logics.deserialize_factory import deserialize_factory
 from Src.Logics.entity_resolver import entity_resolver
 from Src.Logics.reference_finder import reference_finder
+from Src.Logics.report_data_extractor import report_data_extractor
 from Src.Logics.report_factory import report_factory
 from Src.Logics.settings_manager import settings_manager
 from Src.Logics.storage_manager import storage_manager
@@ -97,6 +98,18 @@ def _send_binary(result, file_name: str):
         as_attachment=True,
         download_name=file_name,
     )
+
+
+def _send_report_file(result, file_name: str):
+    """Отдаёт результат отчёта файлом в любом формате из настроек."""
+    if result.is_binary:
+        return _send_binary(result, file_name)
+
+    response = Response(result.text, status=200, content_type=result.mime)
+    response.headers["Content-Disposition"] = (
+        f'attachment; filename="{file_name}"'
+    )
+    return response
 
 
 def _resolve_or_error(entity_type: str, code: str):
@@ -524,7 +537,7 @@ def filter_entities(entity_type: str):
 
 @api.route("/api/osv", methods=["POST"])
 def osv_report():
-    """Формирует ОСВ с учётом фильтрации транзакций."""
+    """Формирует ОСВ файлом в формате из настроек (по умолчанию CSV)."""
     body = request.get_json(silent=True)
     if body is None:
         body = {}
@@ -532,21 +545,22 @@ def osv_report():
         return "Тело должно быть JSON-объектом", 400
 
     try:
+        settings_manager_instance.reload()
         filters = filter_dto.from_dict(body, domain="")
-        report = (
-            turnover_prototype(storage.transactions)
-            .clone(filters)
-            .build()
+        filtered = turnover_prototype(storage.transactions).clone(filters)
+
+        table = report_data_extractor.extract(filtered.data)
+        result = factory.create_default().build(table)
+
+        fmt = _parse_report_type(
+            settings_manager_instance.settings.response_format
         )
     except arguments_exeption as e:
         return str(e), 400
     except Exception as e:
         return f"Ошибка формирования ОСВ: {str(e)}", 500
 
-    return {
-        "header": report.header,
-        "rows": report.rows,
-    }, 200
+    return _send_report_file(result, f"osv.{fmt.slug}")
 
 
 if __name__ == "__main__":

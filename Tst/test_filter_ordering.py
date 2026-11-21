@@ -133,7 +133,7 @@ def test_sorting_is_combined_with_between_filter():
 
 
 def test_invalid_between_raises_before_filtering():
-    """Некорректный диапазон проверяется даже на пустых данных."""
+    """Некорректный диапазон."""
     # Подготовка
     filters = filter_dto(domain="nomenclature")
     filters.add(filter_item_dto.create(
@@ -141,6 +141,9 @@ def test_invalid_between_raises_before_filtering():
     ))
     empty = prototype([])
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         empty.clone(filters)
+
+    # Проверки
+    assert exc_info.value is not None

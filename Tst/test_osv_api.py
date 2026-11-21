@@ -1,10 +1,15 @@
+import csv
+import io
 from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 
 from main import api
+from Src.Dtos.report_data_dto import report_data_dto
+from Src.Logics.csv_report import csv_report
+from Src.Logics.report_data_extractor import report_data_extractor
 from Src.Logics.storage_manager import storage_manager
-from Src.Logics.turnover_prototype import turnover_prototype
 from Src.Models.group_model import group_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
@@ -29,6 +34,13 @@ def clean_storage():
     ):
         setattr(storage, attr, [])
     yield
+
+
+def _table(response) -> tuple[list, list]:
+    """Разбирает CSV-ответ отчёта на заголовок и строки."""
+    text = response.get_data(as_text=True).lstrip("\ufeff")
+    rows = list(csv.reader(io.StringIO(text)))
+    return (rows[0] if rows else []), rows[1:]
 
 
 def _fill_storage():
@@ -71,35 +83,85 @@ def _fill_storage():
 
 
 def test_osv_empty_storage_returns_header(client):
-    """Без транзакций возвращается только заголовок."""
+    """Без транзакций в файле остаётся только заголовок."""
+
+    # Подготовка
+    # Действие
     response = client.post("/api/osv", json={})
 
+    # Проверки
     assert response.status_code == 200
-    data = response.get_json()
-    assert data["header"] == turnover_prototype.HEADER
-    assert data["rows"] == []
+    header, rows = _table(response)
+    assert header == report_data_extractor.TRANSACTION_HEADER
+    assert rows == []
 
 
 def test_osv_returns_report_data(client):
-    """Endpoint возвращает строки ОСВ и итоговую строку."""
+    """Endpoint возвращает CSV со строками ОСВ и итоговой строкой."""
+
+    # Подготовка
     _fill_storage()
 
+    # Действие
     response = client.post("/api/osv", json={})
 
+    # Проверки
     assert response.status_code == 200
-    data = response.get_json()
-    assert data["header"] == turnover_prototype.HEADER
-    assert data["rows"] == [
-        ["Milk", "Main warehouse", "liter", 0.0, 10.0, 4.0, 6.0],
-        ["Apple", "Auxiliary warehouse", "liter", 0.0, 7.0, 0.0, 7.0],
-        ["ИТОГО", "", "", 0.0, 17.0, 4.0, 13.0],
+    header, rows = _table(response)
+    assert header == report_data_extractor.TRANSACTION_HEADER
+    assert rows == [
+        ["Milk", "Main warehouse", "liter", "0.0", "10.0", "4.0", "6.0"],
+        ["Apple", "Auxiliary warehouse", "liter", "0.0", "7.0", "0.0", "7.0"],
+        ["ИТОГО", "", "", "0.0", "17.0", "4.0", "13.0"],
     ]
+
+
+def test_osv_returns_downloadable_csv(client):
+    """Ответ — файл из настроек с заголовком для скачивания."""
+
+    # Подготовка
+    _fill_storage()
+
+    # Действие
+    response = client.post("/api/osv", json={})
+
+    # Проверки
+    assert response.status_code == 200
+    assert response.mimetype == "text/csv"
+    disposition = response.headers["Content-Disposition"]
+    assert "attachment" in disposition
+    assert "osv.csv" in disposition
+
+
+def test_osv_passes_report_data_dto_to_report(client):
+    """В фабрику отчётов передаётся готовая report_data_dto."""
+    # Подготовка
+    _fill_storage()
+    captured = {}
+    real_build = csv_report.build
+
+    def spy(self, source):
+        captured["source"] = source
+        return real_build(self, source)
+
+    # Действие
+    with patch.object(csv_report, "build", spy):
+        response = client.post("/api/osv", json={})
+
+    # Проверки
+    assert response.status_code == 200
+    assert isinstance(captured["source"], report_data_dto)
+    assert captured["source"].header == report_data_extractor.TRANSACTION_HEADER
+    assert len(captured["source"].rows) == 3
 
 
 def test_osv_filters_by_nomenclature_name(client):
     """Фильтр по ``nomenclatures.name`` оставляет только нужную строку."""
+
+    # Подготовка
     _fill_storage()
 
+    # Действие
     response = client.post("/api/osv", json={
         "filters": [{
             "filter_name": "nomenclatures.name",
@@ -108,16 +170,20 @@ def test_osv_filters_by_nomenclature_name(client):
         }],
     })
 
+    # Проверки
     assert response.status_code == 200
-    rows = response.get_json()["rows"]
+    _, rows = _table(response)
     assert [row[0] for row in rows] == ["Milk", "ИТОГО"]
-    assert rows[0][4:] == [10.0, 4.0, 6.0]
+    assert rows[0][4:] == ["10.0", "4.0", "6.0"]
 
 
 def test_osv_filters_by_warehouse_name(client):
     """Фильтр по ``warehouses.name`` оставляет только нужный склад."""
+
+    # Подготовка
     _fill_storage()
 
+    # Действие
     response = client.post("/api/osv", json={
         "filters": [{
             "filter_name": "warehouses.name",
@@ -126,20 +192,24 @@ def test_osv_filters_by_warehouse_name(client):
         }],
     })
 
+    # Проверки
     assert response.status_code == 200
-    rows = response.get_json()["rows"]
+    _, rows = _table(response)
     assert len(rows) == 2
     assert rows[0][:3] == ["Apple", "Auxiliary warehouse", "liter"]
 
 
 def test_osv_filters_by_unique_code(client):
     """Фильтр по коду номенклатуры поддерживается."""
+
+    # Подготовка
     storage = _fill_storage()
     code = next(
         item.unique_code for item in storage.nomenclatures
         if item.name == "Apple"
     )
 
+    # Действие
     response = client.post("/api/osv", json={
         "filters": [{
             "filter_name": "nomenclatures.unique_code",
@@ -148,15 +218,19 @@ def test_osv_filters_by_unique_code(client):
         }],
     })
 
+    # Проверки
     assert response.status_code == 200
-    rows = response.get_json()["rows"]
+    _, rows = _table(response)
     assert [row[0] for row in rows] == ["Apple", "ИТОГО"]
 
 
 def test_osv_filter_not_matched_returns_empty_rows(client):
-    """Неподходящий фильтр возвращает пустой список строк."""
+    """Неподходящий фильтр возвращает файл без строк данных."""
+
+    # Подготовка
     _fill_storage()
 
+    # Действие
     response = client.post("/api/osv", json={
         "filters": [{
             "filter_name": "nomenclatures.name",
@@ -165,28 +239,41 @@ def test_osv_filter_not_matched_returns_empty_rows(client):
         }],
     })
 
+    # Проверки
     assert response.status_code == 200
-    assert response.get_json()["rows"] == []
+    _, rows = _table(response)
+    assert rows == []
 
 
 def test_osv_invalid_filters_type_returns_400(client):
     """``filters`` должен быть списком."""
+
+    # Подготовка
+    # Действие
     response = client.post("/api/osv", json={"filters": "bad"})
 
+    # Проверки
     assert response.status_code == 400
 
 
 def test_osv_missing_filter_name_returns_400(client):
     """Условие без ``filter_name`` отклоняется."""
+
+    # Подготовка
+    # Действие
     response = client.post("/api/osv", json={
         "filters": [{"filter_value": "milk"}],
     })
 
+    # Проверки
     assert response.status_code == 400
 
 
 def test_osv_unknown_filter_type_returns_400(client):
     """Неизвестный ``filter_type`` отклоняется."""
+
+    # Подготовка
+    # Действие
     response = client.post("/api/osv", json={
         "filters": [{
             "filter_name": "nomenclatures.name",
@@ -195,15 +282,20 @@ def test_osv_unknown_filter_type_returns_400(client):
         }],
     })
 
+    # Проверки
     assert response.status_code == 400
 
 
 def test_osv_invalid_json_type_returns_400(client):
     """Тело запроса должно быть JSON-объектом."""
+
+    # Подготовка
+    # Действие
     response = client.post(
         "/api/osv",
         data="[]",
         content_type="application/json",
     )
 
+    # Проверки
     assert response.status_code == 400

@@ -141,9 +141,12 @@ def test_invalid_result_from_dict_unknown_string_reference():
     chain = stub_chain()
     resolver = stub_resolver()
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         parent_model.from_dict(source, chain, resolver)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_from_dict_string_without_model_cls():
@@ -156,9 +159,12 @@ def test_invalid_result_from_dict_string_without_model_cls():
     chain = stub_chain()
     resolver = stub_resolver()
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         dummy_model.from_dict(source, chain, resolver)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_from_dict_source_not_dict():
@@ -171,9 +177,12 @@ def test_invalid_result_from_dict_source_not_dict():
     chain = stub_chain()
     resolver = stub_resolver()
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         dummy_model.from_dict(source, chain, resolver)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_from_dict_chain_is_none():
@@ -186,9 +195,12 @@ def test_invalid_result_from_dict_chain_is_none():
     chain = None
     resolver = stub_resolver()
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         dummy_model.from_dict(source, chain, resolver)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_from_dict_resolver_is_none():
@@ -201,9 +213,12 @@ def test_invalid_result_from_dict_resolver_is_none():
     chain = stub_chain()
     resolver = None
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         dummy_model.from_dict(source, chain, resolver)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_from_dict_visited_not_set():
@@ -217,9 +232,12 @@ def test_invalid_result_from_dict_visited_not_set():
     resolver = stub_resolver()
     visited = []
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         dummy_model.from_dict(source, chain, resolver, visited=visited)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_build_model_bad_model_cls():
@@ -234,9 +252,12 @@ def test_invalid_result_build_model_bad_model_cls():
     resolver = stub_resolver()
     visited = set()
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         dummy_model._build_model(source, bad_model_cls, chain, resolver, visited)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_invalid_result_build_value_unknown_kind():
@@ -252,9 +273,12 @@ def test_invalid_result_build_value_unknown_kind():
     resolver = stub_resolver()
     visited = set()
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         dummy_model._build_value(spec, value, chain, resolver, visited)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_valid_result_specs_are_cached():
