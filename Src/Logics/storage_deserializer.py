@@ -75,7 +75,27 @@ class storage_deserializer(abstract_deserialization):
         if ranges:
             self._deserialize_ranges(self._as_list(ranges))
 
+        self._deserialize_transactions(source.get("transactions"))
+
         return True
+
+    def _deserialize_transactions(self, items) -> None:
+        """Загружает транзакции после справочников и ranges.
+
+        :param items: Секция ``transactions`` из JSON или None.
+        """
+        if not items:
+            return
+        add = getattr(self._storage, "add_transaction", None)
+        if add is None:
+            logger.warning(
+                "storage_deserializer: storage has no add_transaction"
+            )
+            return
+        for item in self._as_list(items):
+            model = self._factory.deserialize(item)
+            add(model)
+            self._register(model)
 
     def _deserialize_ranges(self, items: list) -> None:
         """Двухфазная сборка ranges.

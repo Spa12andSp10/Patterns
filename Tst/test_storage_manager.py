@@ -25,6 +25,7 @@ def reset_storage():
     sm._warehouse = []
     sm._recipes = []
     sm._ingredients = []
+    sm._transactions = []
     sm._is_loaded = False
     yield
 
@@ -310,8 +311,6 @@ def test_valid_result_storage_manager_load_first_start(isolated_settings):
     """
     # Подготовка
     manager, settings_path = isolated_settings
-    # Тест проверяет именно первый запуск, поэтому состояние задаём явно,
-    # не полагаясь на текущее значение в Tst/settings.json.
     manager.settings.first_launch_flag = True
     sm = storage_manager()
 
@@ -328,6 +327,32 @@ def test_valid_result_storage_manager_load_first_start(isolated_settings):
     assert len(sm.nomenclatures) > 0
     assert manager.settings.first_launch_flag is False
     assert settings_path.exists()
+
+
+def test_first_start_loads_test_transactions(isolated_settings):
+    """
+    Проверяет, что первый старт загружает тестовые транзакции из storage_data.json.
+    Ожидаемый результат: не менее трёх транзакций с корректными ссылками.
+    """
+    # Подготовка
+    manager, settings_path = isolated_settings
+    manager.settings.first_launch_flag = True
+    sm = storage_manager()
+
+    # Действие
+    result = sm.load(
+        _tst_path("missing_serialized_storage.json"),
+        _tst_path("storage_data.json"),
+    )
+
+    # Проверки
+    assert result is True
+    assert len(sm.transactions) >= 3
+    first = sm.transactions[0]
+    assert first.nomenclatures.name == "Milk"
+    assert first.warehouses.name == "Main warehouse"
+    assert first.ranges.name == "liter"
+    assert first.value == 10.0
 
 
 def test_invalid_result_storage_manager_load_missing_files(tmp_path):

@@ -33,8 +33,11 @@ def test_valid_storage_recipe_name():
     # Подготовка
     recipe = _make_recipe()
 
-    # Действие и проверки
-    assert recipe.name == "Pasta with beef in milk-apple sauce"
+    # Действие
+    name = recipe.name
+
+    # Проверки
+    assert name == "Pasta with beef in milk-apple sauce"
 
 
 def test_valid_storage_recipe_has_ingredients():
@@ -45,8 +48,11 @@ def test_valid_storage_recipe_has_ingredients():
     # Подготовка
     recipe = _make_recipe()
 
-    # Действие и проверки
-    assert len(recipe.ingredients) == 8
+    # Действие
+    count = len(recipe.ingredients)
+
+    # Проверки
+    assert count == 8
 
 
 def test_valid_storage_recipe_has_no_pf_and_no_package():
@@ -57,9 +63,13 @@ def test_valid_storage_recipe_has_no_pf_and_no_package():
     # Подготовка
     recipe = _make_recipe()
 
-    # Действие и проверки
-    assert recipe.with_pf is False
-    assert recipe.with_package is False
+    # Действие
+    pf = recipe.with_pf
+    package = recipe.with_package
+
+    # Проверки
+    assert pf is False
+    assert package is False
 
 
 def test_valid_brutto_from_json():

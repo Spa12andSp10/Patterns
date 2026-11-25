@@ -22,4 +22,4 @@ class datetime_deserialize_convertor(abstract_convertor):
                 return date.fromisoformat(raw)
             return datetime.fromisoformat(raw)
         except ValueError as e:
-            raise arguments_exeption("convert", f"Некорректная дата")
+            raise arguments_exeption("convert", f"Некорректная дата: {e}")

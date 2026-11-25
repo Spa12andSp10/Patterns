@@ -103,7 +103,7 @@ class validator:
                     total += 3 * int(new_value[i])
                     cnt = 1
         if total % 10 != 0:
-            raise validation_exeption("account", "Некорректный Счет!")
+            raise validation_exeption("account", "Некорректный счёт!")
 
     @staticmethod
     def no_lower_that_zero_validate(value, field="field"):
@@ -164,7 +164,7 @@ class validator:
         
         :param data: Проверяемое имя файла
         :param field: Имя поле сообщения об ошибке
-        :raises emptu_file_exeption: Если файл пустой.
+        :raises empty_file_exeption: Если файл пустой.
         """
 
         if os.path.getsize(data) == 0:

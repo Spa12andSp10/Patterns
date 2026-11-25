@@ -1,11 +1,16 @@
+from datetime import datetime
+
 import pytest
 
+from Src.Dtos.report_data_dto import report_data_dto
 from Src.Logics.report_data_extractor import report_data_extractor
 from Src.Models.technicalmap_model import technicalmap_model
 from Src.Models.ingredient_model import ingredient_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
 from Src.Models.group_model import group_model
+from Src.Models.transaction_model import transaction_model
+from Src.Models.warehouse_model import warehouse_model
 from Src.Core.exception import arguments_exeption
 
 
@@ -233,8 +238,134 @@ def test_invalid_extract_unsupported_type_raises_error():
 
     fake = FakeModel()
 
-    # Действие и проверки
+    # Действие
     with pytest.raises(arguments_exeption) as exc_info:
         report_data_extractor.extract(fake)
 
+    # Проверки
     assert "Неверный тип формирования отчета" in str(exc_info.value)
+
+
+def _transaction_references():
+    """Создаёт номенклатуры, склады и единицу для тестов ОСВ."""
+    group = group_model.create("Dairy products")
+    unit = range_model.create("liter", 1.0, None)
+    milk = nomenclature_model.create(
+        "Pasteurized milk 3.2%", "Milk", group, unit, "product",
+    )
+    apple = nomenclature_model.create(
+        "Astrakhan apple", "Apple", group, unit, "product",
+    )
+    main = warehouse_model.create("Main warehouse", "29 Lermontova St.")
+    auxiliary = warehouse_model.create(
+        "Auxiliary warehouse", "52 Krasnoarmeyskaya St.",
+    )
+    return milk, apple, main, auxiliary, unit
+
+
+def _transaction(nomenclature, warehouse, unit, value, day=1):
+    """Создаёт транзакцию за январь 2026 года."""
+    return transaction_model.create(
+        nomenclature, warehouse, unit, value, datetime(2026, 1, day),
+    )
+
+
+def test_extract_accepts_ready_report_data_dto():
+    """Уже готовый report_data_dto возвращается без пересборки."""
+    # Подготовка
+    table = report_data_dto.create(header=["name"], rows=[["Milk"]])
+
+    # Действие
+    result = report_data_extractor.extract(table)
+
+    # Проверки
+    assert result is table
+
+
+def test_extract_transactions_empty_returns_only_header():
+    """Без транзакций возвращается пустая таблица с заголовком."""
+    # Подготовка
+    transactions = []
+
+    # Действие
+    header, rows = _extract(transactions)
+
+    # Проверки
+    assert header == report_data_extractor.TRANSACTION_HEADER
+    assert rows == []
+
+
+def test_extract_transactions_groups_debit_and_credit():
+    """Приход и расход группируются в одну строку."""
+    # Подготовка
+    milk, _, main, _, unit = _transaction_references()
+    transactions = [
+        _transaction(milk, main, unit, 10, 1),
+        _transaction(milk, main, unit, -4, 2),
+    ]
+
+    # Действие
+    header, rows = _extract(transactions)
+
+    # Проверки
+    assert header == report_data_extractor.TRANSACTION_HEADER
+    assert rows == [
+        ["Milk", "Main warehouse", "liter", 0.0, 10.0, 4.0, 6.0],
+        ["ИТОГО", "", "", 0.0, 10.0, 4.0, 6.0],
+    ]
+
+
+def test_extract_transactions_separates_warehouses():
+    """Одинаковая номенклатура на разных складах даёт разные строки."""
+    # Подготовка
+    milk, _, main, auxiliary, unit = _transaction_references()
+    transactions = [
+        _transaction(milk, main, unit, 10, 1),
+        _transaction(milk, auxiliary, unit, -3, 2),
+    ]
+
+    # Действие
+    header, rows = _extract(transactions)
+
+    # Проверки
+    assert len(rows) == 3
+    assert rows[0] == [
+        "Milk", "Main warehouse", "liter", 0.0, 10.0, 0.0, 10.0,
+    ]
+    assert rows[1] == [
+        "Milk", "Auxiliary warehouse", "liter", 0.0, 0.0, 3.0, -3.0,
+    ]
+    assert rows[2] == ["ИТОГО", "", "", 0.0, 10.0, 3.0, 7.0]
+
+
+def test_extract_transactions_separates_nomenclatures():
+    """Разная номенклатура на одном складе даёт разные строки."""
+    # Подготовка
+    milk, apple, main, _, unit = _transaction_references()
+    transactions = [
+        _transaction(milk, main, unit, 4, 1),
+        _transaction(apple, main, unit, 7, 2),
+    ]
+
+    # Действие
+    header, rows = _extract(transactions)
+
+    # Проверки
+    assert [row[0] for row in rows] == ["Milk", "Apple", "ИТОГО"]
+
+
+def test_extract_transactions_rounds_values_to_two_digits():
+    """Дробные значения округляются до двух знаков."""
+    # Подготовка
+    milk, _, main, _, unit = _transaction_references()
+    transactions = [
+        _transaction(milk, main, unit, 1.005, 1),
+        _transaction(milk, main, unit, 0.004, 2),
+    ]
+
+    # Действие
+    header, rows = _extract(transactions)
+
+    # Проверки
+    assert rows[0][4] == 1.01
+    assert rows[0][6] == 1.01

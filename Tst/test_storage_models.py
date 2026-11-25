@@ -9,10 +9,12 @@ from Src.Core.entity_type import entity_type
 from Src.Core.exception import arguments_exeption
 from Src.Logics.convert_factory import convert_factory
 from Src.Logics.storage_deserializer import storage_deserializer
+from Src.Logics.storage_persistence import storage_persistence
 from Src.Logics.settings_deserializer import settings_deserializer
 from Src.Logics.storage_manager import storage_manager
 from Src.Logics.settings_manager import settings_manager
 from Src.Logics.storage_bootstrap import storage_bootstrap
+from Src.Models.transaction_model import transaction_model
 
 
 SETTINGS_FILE = "settings.json"
@@ -31,19 +33,6 @@ def _pairs(models) -> set:
     return {(m.name, m.unique_code) for m in models}
 
 
-def _serialize_storage(storage) -> dict:
-    """Сериализует хранилище тем же путём, что и продакшн save_models."""
-    walker = convert_factory().create()
-    payload = {
-        "groups":       [walker.convert(g) for g in storage.groups],
-        "ranges":       [walker.convert(r) for r in storage.ranges],
-        "nomenclature": [walker.convert(n) for n in storage.nomenclatures],
-        "warehouse":    [walker.convert(w) for w in storage.warehouses],
-        "recipes":      [walker.convert(r) for r in storage.recipes],
-    }
-    return json.loads(abstract_convertor.to_json(payload))
-
-
 def _serialize_settings(model) -> dict:
     """Сериализует settings_model тем же путём, что и storage:
     через convert_factory/walker."""
@@ -56,7 +45,7 @@ def _reset_storage() -> storage_manager:
     sm = storage_manager()
     for attr in (
         "_groups", "_ranges", "_nomenclature",
-        "_warehouse", "_recipes", "_ingredients",
+        "_warehouse", "_recipes", "_ingredients", "_transactions",
     ):
         getattr(sm, attr, []).clear()
     sm._is_loaded = False
@@ -84,13 +73,12 @@ def original_storage():
 
 @pytest.fixture
 def serialized_json(original_storage):
-    """Эталон JSON — получается сериализацией."""
-    data = _serialize_storage(original_storage)
+    """Эталон JSON — получается продакшн-сериализатором save_models."""
+    path = _tst_path(SERIALIZED_FILE)
+    assert storage_persistence(original_storage).save_models(path) is True
 
-    with open(_tst_path(SERIALIZED_FILE), "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-    return data
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 @pytest.fixture
@@ -195,6 +183,28 @@ def test_recipes_roundtrip(original_storage, restored_storage):
     assert actual == expected
 
 
+def test_transactions_roundtrip(original_storage, restored_storage):
+    """
+    Проверяет round-trip транзакций.
+    Ожидаемый результат: все транзакции восстановлены и ссылаются на
+    объекты из соответствующих секций restored_storage.
+    """
+    # Подготовка
+    expected = {item.unique_code for item in original_storage.transactions}
+
+    # Действие
+    actual = {item.unique_code for item in restored_storage.transactions}
+
+    # Проверки
+    assert actual == expected
+    assert len(actual) >= 3
+    for item in restored_storage.transactions:
+        assert isinstance(item, transaction_model)
+        assert any(n is item.nomenclatures for n in restored_storage.nomenclatures)
+        assert any(w is item.warehouses for w in restored_storage.warehouses)
+        assert any(r is item.ranges for r in restored_storage.ranges)
+
+
 def test_group_model_content(original_storage, restored_storage):
     """
     Проверяет содержимое конкретной группы после round-trip.
@@ -215,8 +225,8 @@ def test_range_model_content(original_storage, restored_storage):
     """
     Проверяет range после round-trip: name, unique_code,
     conversion_factor и рекурсивный base (kilogram -> gram).
-    Ожидаемый результат: base — ТОТ ЖЕ объект из storage.ranges,
-    а не копия (кэш resolver по unique_code).
+    Ожидаемый результат: base — тот же объект из storage.ranges,
+    а не копия.
     """
     # Подготовка
     original = original_storage.ranges[1]
@@ -324,16 +334,20 @@ def test_short_reference_resolved_from_cache(original_storage, serialized_json):
         "item_type": "product",
     }
 
-    # Действие и проверки: пустой кэш -> ошибка
+    # Действие
     fresh = storage_deserializer(_reset_storage())
-    with pytest.raises(arguments_exeption):
+    with pytest.raises(arguments_exeption) as exc_info:
         fresh.factory.deserialize(nested)
 
-    # Действие: наполняем кэш и повторяем
+    # Проверки
+    assert exc_info.value is not None
+
+    # Действие
     deserializer = storage_deserializer(_reset_storage())
     deserializer.deserialized(serialized_json)
     resolved = deserializer.factory.deserialize(nested)
 
+    # Проверки
     assert resolved.group is not None
     assert resolved.group.unique_code == target.unique_code
 
@@ -359,9 +373,12 @@ def test_cyclic_self_reference_raises(original_storage, serialized_json):
         }
     }
 
-    # Действие и проверки
-    with pytest.raises(arguments_exeption):
+    # Действие
+    with pytest.raises(arguments_exeption) as exc_info:
         storage_deserializer(_reset_storage()).factory.deserialize(recipe)
+
+    # Проверки
+    assert exc_info.value is not None
 
 
 def test_settings_roundtrip():

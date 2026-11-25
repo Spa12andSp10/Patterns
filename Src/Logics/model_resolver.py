@@ -6,6 +6,7 @@ from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.ingredient_model import ingredient_model
 from Src.Models.technicalmap_model import technicalmap_model
 from Src.Models.warehouse_model import warehouse_model
+from Src.Models.transaction_model import transaction_model
 
 
 class model_resolver:
@@ -18,6 +19,7 @@ class model_resolver:
         range_model,
         warehouse_model,
         group_model,
+        transaction_model,
     )
 
     def __init__(self, cache: dict | None = None):

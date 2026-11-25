@@ -3,32 +3,32 @@
     {
       "max_lenght": 50,
       "name": "Dairy products",
-      "unique_code": "ef4a5484ae5146ad9e08c7580d34605e"
+      "unique_code": "57d33d4d3ad443a3ba506f7e8fd2bc75"
     },
     {
       "max_lenght": 50,
       "name": "Meat products",
-      "unique_code": "4398eb606e9945cbbc236b9708773a46"
+      "unique_code": "465fedaf76fe4a3a9bb4f0e0a5533735"
     },
     {
       "max_lenght": 50,
       "name": "Grocery",
-      "unique_code": "504540eab1a34106b9b5ddd24cb1c991"
+      "unique_code": "41a2d0d117a44b98a33e2cea26415058"
     },
     {
       "max_lenght": 50,
       "name": "Vegetables, fruit",
-      "unique_code": "f6791cdc0dc246b181498dba7ac326e2"
+      "unique_code": "7d1df70962984a19b7dff7bfa0a60d56"
     },
     {
       "max_lenght": 50,
       "name": "Packages",
-      "unique_code": "c3483a5c04244e16a5ca960bdd256908"
+      "unique_code": "b763c462bfa9478eb0af3860a85a172a"
     },
     {
       "max_lenght": 50,
       "name": "Sauces",
-      "unique_code": "d3be91ca682e482bbb11532eae70b940"
+      "unique_code": "bd4a17807e734650b6ef875e0d8f423b"
     }
   ],
   "ranges": [
@@ -36,37 +36,297 @@
       "conversion_factor": 1.0,
       "max_lenght": 50,
       "name": "gram",
-      "unique_code": "c10900554ed54f228b74e3495f8b04f1"
+      "unique_code": "7c41db5378254e8ea33f30c7355e9023"
     },
     {
       "base": {
         "conversion_factor": 1.0,
         "max_lenght": 50,
         "name": "gram",
-        "unique_code": "3663334f118a4b64beddd10edcbaf13f"
+        "unique_code": "9e5976749ac446028e57100853515988"
       },
       "conversion_factor": 1000.0,
       "max_lenght": 50,
       "name": "kilogram",
-      "unique_code": "8d036c9f5bf34fef80a7ebe25935cad4"
+      "unique_code": "0b017c8d605241da8722da385f0c0e92"
     },
     {
       "conversion_factor": 1.0,
       "max_lenght": 50,
       "name": "milliliter",
-      "unique_code": "4c289c95e7524d69a3c4525dcdfd3755"
+      "unique_code": "ee2d4c471e4d412b86eb530cfef7c6d9"
     },
     {
       "base": {
         "conversion_factor": 1.0,
         "max_lenght": 50,
         "name": "milliliter",
-        "unique_code": "e368eb5db63c401c9107b1bc38837106"
+        "unique_code": "1c4d04eb9cfd499fb5b16ada711fa194"
       },
       "conversion_factor": 1000.0,
       "max_lenght": 50,
       "name": "liter",
-      "unique_code": "926cede8a9ed485a8d4cd31009a2a9cb"
+      "unique_code": "b8ccd3500ea848e780d6af336a8b57ae"
+    }
+  ],
+  "transactions": [
+    {
+      "nomenclatures": {
+        "full_name": "Pasteurized milk 3.2%",
+        "group": {
+          "max_lenght": 50,
+          "name": "Dairy products",
+          "unique_code": "57d33d4d3ad443a3ba506f7e8fd2bc75"
+        },
+        "item_type": "product",
+        "max_lenght": 50,
+        "name": "Milk",
+        "range": {
+          "base": {
+            "conversion_factor": 1.0,
+            "max_lenght": 50,
+            "name": "milliliter",
+            "unique_code": "1c4d04eb9cfd499fb5b16ada711fa194"
+          },
+          "conversion_factor": 1000.0,
+          "max_lenght": 50,
+          "name": "liter",
+          "unique_code": "b8ccd3500ea848e780d6af336a8b57ae"
+        },
+        "unique_code": "2277716c0d6146ac826beef88763f813"
+      },
+      "period": "2026-01-15T00:00:00",
+      "ranges": {
+        "base": {
+          "conversion_factor": 1.0,
+          "max_lenght": 50,
+          "name": "milliliter",
+          "unique_code": "1c4d04eb9cfd499fb5b16ada711fa194"
+        },
+        "conversion_factor": 1000.0,
+        "max_lenght": 50,
+        "name": "liter",
+        "unique_code": "b8ccd3500ea848e780d6af336a8b57ae"
+      },
+      "unique_code": "7ed86f8e8f314c6f85d81e97b3298167",
+      "value": 10.0,
+      "warehouses": {
+        "address": "29 Lermontova St.",
+        "max_lenght": 50,
+        "name": "Main warehouse",
+        "unique_code": "9a5fb5e43e5043cb9ae555723e2702d0"
+      }
+    },
+    {
+      "nomenclatures": {
+        "full_name": "Pasteurized milk 3.2%",
+        "group": {
+          "max_lenght": 50,
+          "name": "Dairy products",
+          "unique_code": "57d33d4d3ad443a3ba506f7e8fd2bc75"
+        },
+        "item_type": "product",
+        "max_lenght": 50,
+        "name": "Milk",
+        "range": {
+          "base": {
+            "conversion_factor": 1.0,
+            "max_lenght": 50,
+            "name": "milliliter",
+            "unique_code": "1c4d04eb9cfd499fb5b16ada711fa194"
+          },
+          "conversion_factor": 1000.0,
+          "max_lenght": 50,
+          "name": "liter",
+          "unique_code": "b8ccd3500ea848e780d6af336a8b57ae"
+        },
+        "unique_code": "2277716c0d6146ac826beef88763f813"
+      },
+      "period": "2026-01-16T00:00:00",
+      "ranges": {
+        "base": {
+          "conversion_factor": 1.0,
+          "max_lenght": 50,
+          "name": "milliliter",
+          "unique_code": "1c4d04eb9cfd499fb5b16ada711fa194"
+        },
+        "conversion_factor": 1000.0,
+        "max_lenght": 50,
+        "name": "liter",
+        "unique_code": "b8ccd3500ea848e780d6af336a8b57ae"
+      },
+      "unique_code": "58764448bbc848dda09c30aaa18ddc1b",
+      "value": -4.0,
+      "warehouses": {
+        "address": "29 Lermontova St.",
+        "max_lenght": 50,
+        "name": "Main warehouse",
+        "unique_code": "9a5fb5e43e5043cb9ae555723e2702d0"
+      }
+    },
+    {
+      "nomenclatures": {
+        "full_name": "Beef (top grade)",
+        "group": {
+          "max_lenght": 50,
+          "name": "Meat products",
+          "unique_code": "465fedaf76fe4a3a9bb4f0e0a5533735"
+        },
+        "item_type": "product",
+        "max_lenght": 50,
+        "name": "Beef",
+        "range": {
+          "base": {
+            "conversion_factor": 1.0,
+            "max_lenght": 50,
+            "name": "gram",
+            "unique_code": "9e5976749ac446028e57100853515988"
+          },
+          "conversion_factor": 1000.0,
+          "max_lenght": 50,
+          "name": "kilogram",
+          "unique_code": "0b017c8d605241da8722da385f0c0e92"
+        },
+        "unique_code": "308555afb78d45b191f7f6e5353076f3"
+      },
+      "period": "2026-01-17T00:00:00",
+      "ranges": {
+        "base": {
+          "conversion_factor": 1.0,
+          "max_lenght": 50,
+          "name": "gram",
+          "unique_code": "9e5976749ac446028e57100853515988"
+        },
+        "conversion_factor": 1000.0,
+        "max_lenght": 50,
+        "name": "kilogram",
+        "unique_code": "0b017c8d605241da8722da385f0c0e92"
+      },
+      "unique_code": "f9e5fec4566d438a9f1678f2c48914f0",
+      "value": 7.5,
+      "warehouses": {
+        "address": "29 Lermontova St.",
+        "max_lenght": 50,
+        "name": "Main warehouse",
+        "unique_code": "9a5fb5e43e5043cb9ae555723e2702d0"
+      }
+    },
+    {
+      "nomenclatures": {
+        "full_name": "Astrakhan apple",
+        "group": {
+          "max_lenght": 50,
+          "name": "Vegetables, fruit",
+          "unique_code": "7d1df70962984a19b7dff7bfa0a60d56"
+        },
+        "item_type": "product",
+        "max_lenght": 50,
+        "name": "Apple",
+        "range": {
+          "base": {
+            "conversion_factor": 1.0,
+            "max_lenght": 50,
+            "name": "gram",
+            "unique_code": "9e5976749ac446028e57100853515988"
+          },
+          "conversion_factor": 1000.0,
+          "max_lenght": 50,
+          "name": "kilogram",
+          "unique_code": "0b017c8d605241da8722da385f0c0e92"
+        },
+        "unique_code": "825c13abbed645ecbe4e697858b5f74a"
+      },
+      "period": "2026-01-18T00:00:00",
+      "ranges": {
+        "base": {
+          "conversion_factor": 1.0,
+          "max_lenght": 50,
+          "name": "gram",
+          "unique_code": "9e5976749ac446028e57100853515988"
+        },
+        "conversion_factor": 1000.0,
+        "max_lenght": 50,
+        "name": "kilogram",
+        "unique_code": "0b017c8d605241da8722da385f0c0e92"
+      },
+      "unique_code": "46f91baf51d5489986e6a49e8563103a",
+      "value": -2.5,
+      "warehouses": {
+        "address": "52 Krasnoarmeyskaya St.",
+        "max_lenght": 50,
+        "name": "Auxiliary warehouse",
+        "unique_code": "0a2f9a23dad346d3803fb23ff95a12ce"
+      }
+    },
+    {
+      "nomenclatures": {
+        "full_name": "Durum wheat pasta",
+        "group": {
+          "max_lenght": 50,
+          "name": "Grocery",
+          "unique_code": "41a2d0d117a44b98a33e2cea26415058"
+        },
+        "item_type": "product",
+        "max_lenght": 50,
+        "name": "Pasta",
+        "range": {
+          "conversion_factor": 1.0,
+          "max_lenght": 50,
+          "name": "gram",
+          "unique_code": "7c41db5378254e8ea33f30c7355e9023"
+        },
+        "unique_code": "5e15e00be35641a8a408f961f82f4877"
+      },
+      "period": "2026-01-19T00:00:00",
+      "ranges": {
+        "conversion_factor": 1.0,
+        "max_lenght": 50,
+        "name": "gram",
+        "unique_code": "7c41db5378254e8ea33f30c7355e9023"
+      },
+      "unique_code": "aa4d75e0991e4b7d9a2901192ba1c068",
+      "value": 500.0,
+      "warehouses": {
+        "address": "52 Krasnoarmeyskaya St.",
+        "max_lenght": 50,
+        "name": "Auxiliary warehouse",
+        "unique_code": "0a2f9a23dad346d3803fb23ff95a12ce"
+      }
+    },
+    {
+      "nomenclatures": {
+        "full_name": "Aluminum cloche",
+        "group": {
+          "max_lenght": 50,
+          "name": "Packages",
+          "unique_code": "b763c462bfa9478eb0af3860a85a172a"
+        },
+        "item_type": "packaging",
+        "max_lenght": 50,
+        "name": "Cloche",
+        "range": {
+          "conversion_factor": 1.0,
+          "max_lenght": 50,
+          "name": "gram",
+          "unique_code": "7c41db5378254e8ea33f30c7355e9023"
+        },
+        "unique_code": "b0af28c2cf59462fbe747c1ff504e80e"
+      },
+      "period": "2026-01-20T00:00:00",
+      "ranges": {
+        "conversion_factor": 1.0,
+        "max_lenght": 50,
+        "name": "gram",
+        "unique_code": "7c41db5378254e8ea33f30c7355e9023"
+      },
+      "unique_code": "9e0257cea6f2403e90602bb983eceae0",
+      "value": -10.0,
+      "warehouses": {
+        "address": "29 Lermontova St.",
+        "max_lenght": 50,
+        "name": "Main warehouse",
+        "unique_code": "9a5fb5e43e5043cb9ae555723e2702d0"
+      }
     }
   ],
   "nomenclature": [
@@ -75,7 +335,7 @@
       "group": {
         "max_lenght": 50,
         "name": "Dairy products",
-        "unique_code": "ef4a5484ae5146ad9e08c7580d34605e"
+        "unique_code": "57d33d4d3ad443a3ba506f7e8fd2bc75"
       },
       "item_type": "product",
       "max_lenght": 50,
@@ -85,21 +345,21 @@
           "conversion_factor": 1.0,
           "max_lenght": 50,
           "name": "milliliter",
-          "unique_code": "e368eb5db63c401c9107b1bc38837106"
+          "unique_code": "1c4d04eb9cfd499fb5b16ada711fa194"
         },
         "conversion_factor": 1000.0,
         "max_lenght": 50,
         "name": "liter",
-        "unique_code": "926cede8a9ed485a8d4cd31009a2a9cb"
+        "unique_code": "b8ccd3500ea848e780d6af336a8b57ae"
       },
-      "unique_code": "2b3121e4787740b89194e1a69d23c982"
+      "unique_code": "2277716c0d6146ac826beef88763f813"
     },
     {
       "full_name": "Astrakhan apple",
       "group": {
         "max_lenght": 50,
         "name": "Vegetables, fruit",
-        "unique_code": "f6791cdc0dc246b181498dba7ac326e2"
+        "unique_code": "7d1df70962984a19b7dff7bfa0a60d56"
       },
       "item_type": "product",
       "max_lenght": 50,
@@ -109,21 +369,21 @@
           "conversion_factor": 1.0,
           "max_lenght": 50,
           "name": "gram",
-          "unique_code": "3663334f118a4b64beddd10edcbaf13f"
+          "unique_code": "9e5976749ac446028e57100853515988"
         },
         "conversion_factor": 1000.0,
         "max_lenght": 50,
         "name": "kilogram",
-        "unique_code": "8d036c9f5bf34fef80a7ebe25935cad4"
+        "unique_code": "0b017c8d605241da8722da385f0c0e92"
       },
-      "unique_code": "9f84cf067f4c4b8f81da9a93d736bc09"
+      "unique_code": "825c13abbed645ecbe4e697858b5f74a"
     },
     {
       "full_name": "Durum wheat pasta",
       "group": {
         "max_lenght": 50,
         "name": "Grocery",
-        "unique_code": "504540eab1a34106b9b5ddd24cb1c991"
+        "unique_code": "41a2d0d117a44b98a33e2cea26415058"
       },
       "item_type": "product",
       "max_lenght": 50,
@@ -132,16 +392,16 @@
         "conversion_factor": 1.0,
         "max_lenght": 50,
         "name": "gram",
-        "unique_code": "c10900554ed54f228b74e3495f8b04f1"
+        "unique_code": "7c41db5378254e8ea33f30c7355e9023"
       },
-      "unique_code": "851e4da1d13447beb3cc346843606b5d"
+      "unique_code": "5e15e00be35641a8a408f961f82f4877"
     },
     {
       "full_name": "Beef (top grade)",
       "group": {
         "max_lenght": 50,
         "name": "Meat products",
-        "unique_code": "4398eb606e9945cbbc236b9708773a46"
+        "unique_code": "465fedaf76fe4a3a9bb4f0e0a5533735"
       },
       "item_type": "product",
       "max_lenght": 50,
@@ -151,21 +411,21 @@
           "conversion_factor": 1.0,
           "max_lenght": 50,
           "name": "gram",
-          "unique_code": "3663334f118a4b64beddd10edcbaf13f"
+          "unique_code": "9e5976749ac446028e57100853515988"
         },
         "conversion_factor": 1000.0,
         "max_lenght": 50,
         "name": "kilogram",
-        "unique_code": "8d036c9f5bf34fef80a7ebe25935cad4"
+        "unique_code": "0b017c8d605241da8722da385f0c0e92"
       },
-      "unique_code": "6b64633765024ab5b39a7d6447fc0ecf"
+      "unique_code": "308555afb78d45b191f7f6e5353076f3"
     },
     {
       "full_name": "Aluminum cloche",
       "group": {
         "max_lenght": 50,
         "name": "Packages",
-        "unique_code": "c3483a5c04244e16a5ca960bdd256908"
+        "unique_code": "b763c462bfa9478eb0af3860a85a172a"
       },
       "item_type": "packaging",
       "max_lenght": 50,
@@ -174,9 +434,9 @@
         "conversion_factor": 1.0,
         "max_lenght": 50,
         "name": "gram",
-        "unique_code": "c10900554ed54f228b74e3495f8b04f1"
+        "unique_code": "7c41db5378254e8ea33f30c7355e9023"
       },
-      "unique_code": "84f33f1735374d2cb14c5c4919dc5c1b"
+      "unique_code": "b0af28c2cf59462fbe747c1ff504e80e"
     }
   ],
   "warehouse": [
@@ -184,13 +444,13 @@
       "address": "29 Lermontova St.",
       "max_lenght": 50,
       "name": "Main warehouse",
-      "unique_code": "762e192b64684bce82eca1a77f2531d7"
+      "unique_code": "9a5fb5e43e5043cb9ae555723e2702d0"
     },
     {
       "address": "52 Krasnoarmeyskaya St.",
       "max_lenght": 50,
       "name": "Auxiliary warehouse",
-      "unique_code": "272ccdff7956437dabccbf8da571f283"
+      "unique_code": "0a2f9a23dad346d3803fb23ff95a12ce"
     }
   ],
   "recipes": [
@@ -208,7 +468,7 @@
           "max_lenght": 50,
           "name": "Durum wheat pasta",
           "proteins": 10.4,
-          "unique_code": "63ecc384ff484f59a7e633c5b1a41f0d"
+          "unique_code": "c8f22adbb1734f5dbaa0f5dfb239b70c"
         },
         "1": {
           "brutto": 500.0,
@@ -220,7 +480,7 @@
           "max_lenght": 50,
           "name": "Beef (prime grade)",
           "proteins": 18.6,
-          "unique_code": "a861a3e9e6554dc48a6daa62be77ca5d"
+          "unique_code": "bd76e3f9ac6d45ff89572e71faa1f146"
         },
         "2": {
           "brutto": 300.0,
@@ -232,7 +492,7 @@
           "max_lenght": 50,
           "name": "Pasteurized milk 3.2%",
           "proteins": 2.9,
-          "unique_code": "2edbaf770ed04b94bc45d215bfe7d36b"
+          "unique_code": "08c5e2bdb05f4f2d807c372e183825e9"
         },
         "3": {
           "brutto": 200.0,
@@ -244,7 +504,7 @@
           "max_lenght": 50,
           "name": "Astrakhan apple",
           "proteins": 0.4,
-          "unique_code": "117f63ae7a7046bcb84f8a2e3ba72bc9"
+          "unique_code": "be9f4a01fbf141e4965af36a239eb412"
         },
         "4": {
           "brutto": 100.0,
@@ -256,7 +516,7 @@
           "max_lenght": 50,
           "name": "Onion",
           "proteins": 1.4,
-          "unique_code": "80529a9789f7435eadcd43a9e57f8e69"
+          "unique_code": "b3780bfad8de4f5381028e63890e14ba"
         },
         "5": {
           "brutto": 30.0,
@@ -268,7 +528,7 @@
           "max_lenght": 50,
           "name": "Butter",
           "proteins": 0.5,
-          "unique_code": "1ef69cb9e7324e1597b29f7cbe5213e3"
+          "unique_code": "f7f2eb143f2440729c3109582430e208"
         },
         "6": {
           "brutto": 5.0,
@@ -280,7 +540,7 @@
           "max_lenght": 50,
           "name": "Salt",
           "proteins": 0.0,
-          "unique_code": "5e727752e690413c8d9afd0643720307"
+          "unique_code": "addb42cfd6a84d6fa4ec1c05a90a9003"
         },
         "7": {
           "brutto": 2.0,
@@ -292,7 +552,7 @@
           "max_lenght": 50,
           "name": "Ground black pepper",
           "proteins": 0.0,
-          "unique_code": "1ebd5c6e94df4c7daf6e4b67abe5fb88"
+          "unique_code": "02a07ebed4c1411283fa81983ef14b4c"
         }
       },
       "max_lenght": 50,
@@ -318,7 +578,7 @@
         }
       },
       "time": "1 hour 20 minutes",
-      "unique_code": "24df2aea111747a0b7f40ff6561db69e",
+      "unique_code": "81593e359df7412a8fb32ef3332ab048",
       "with_package": false,
       "with_pf": false
     }
