@@ -7,6 +7,7 @@ from Src.Models.ingredient_model import ingredient_model
 from Src.Models.technicalmap_model import technicalmap_model
 from Src.Models.warehouse_model import warehouse_model
 from Src.Models.transaction_model import transaction_model
+from Src.Models.log_message_model import log_message_model
 
 
 class model_resolver:
@@ -20,6 +21,7 @@ class model_resolver:
         warehouse_model,
         group_model,
         transaction_model,
+        log_message_model,
     )
 
     def __init__(self, cache: dict | None = None):

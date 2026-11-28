@@ -5,6 +5,9 @@ from Src.Models.settings_model import settings_model
 from Src.Logics.settings_deserializer import settings_deserializer
 from Src.Logics.convert_factory import convert_factory
 from Src.Core.abstract_convertor import abstract_convertor
+from Src.Core.event_type import event_types
+from Src.Logics.observer import observer
+from Src.Core.message_type import message_type
 
 
 class settings_manager(abstract_manager):
@@ -18,6 +21,7 @@ class settings_manager(abstract_manager):
         return cls.instance
 
     def __init__(self):
+        super().__init__()
         if not hasattr(self, "_initialized"):
             self._initialized = True
             self._settings: settings_model = None
@@ -37,6 +41,7 @@ class settings_manager(abstract_manager):
             raise arguments_exeption("settings", "Ожидалась settings_model")
         self._settings = value
         self._is_loaded = True
+        observer.create(event_types.CHANGE_SETTINGS, {"message": "Параметры настроек изменены","system_name": "settings","message_type": message_type.INFO})
 
     @property
     def is_loaded(self) -> bool:
@@ -46,21 +51,26 @@ class settings_manager(abstract_manager):
     def file_name(self) -> str:
         return self._file_name
 
-    def load(self, file_name: str = "") -> bool:
+    def load(self, file_name: str = "", force: bool = False) -> bool:
         """Загружает настройки из файла через settings_deserializer."""
         inner = file_name or self._file_name
         model = settings_deserializer.load(inner)
         if model is None:
             return False
 
+        if self._is_loaded and self._file_name == inner and not force:
+            return True
+
         self._settings = model
         self._file_name = inner
         self._is_loaded = True
+        observer.create(event_types.LOAD_SETTINGS, {"message": f"Настройки загружены из {inner}","system_name": "settings","message_type": message_type.INFO})
+        observer.create(event_types.CHANGE_SETTINGS, {"message": "Параметры изменены","system_name": "settings","message_type": message_type.INFO})
         return True
 
     def reload(self) -> bool:
         """Перечитывает настройки из того же файла."""
-        return self.load(self._file_name)
+        return self.load(self._file_name, force=True)
 
     def save(self, file_name: str = "") -> bool:
         """Сохраняет настройки в файл через общий механизм walker."""
@@ -79,4 +89,6 @@ class settings_manager(abstract_manager):
             return False
 
         self._file_name = inner
+        observer.create(event_types.SAVE_SETTINGS, {"message": "Параметры сохранены","system_name": "settings","message_type": message_type.INFO})
         return True
+    

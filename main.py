@@ -17,14 +17,17 @@ from Src.Dtos.filter_dto import filter_dto
 from Src.Logics.convert_factory import convert_factory
 from Src.Logics.prototype import prototype
 from Src.Logics.turnover_prototype import turnover_prototype
+from Src.Core.event_type import event_types
+from Src.Core.message_type import message_type
+from Src.Logics.logger import logger
+from Src.Logics.observer import observer
+from Src.Dtos.report_data_dto import report_data_dto
 
 api = connexion.FlaskApp(__name__)
 
 FILTER_DOMAINS = {
     item.value for item in filter_dto.SUPPORTED_DOMAINS
 }
-
-
 
 def _storage_path() -> str:
     """Путь к файлу storage_data.json (эталонные данные)."""
@@ -41,7 +44,7 @@ def _settings_path() -> str:
     return str(Path(__file__).resolve().parent / "Tst" / "settings.json")
 
 
-
+logger().load()
 settings_manager_instance = settings_manager()
 settings_manager_instance.load(_settings_path())
 
@@ -52,7 +55,8 @@ factory = report_factory()
 resolver = entity_resolver(storage)
 references = reference_finder(resolver.all_entities)
 
-
+def _log(event_type: event_types, message, system_name, message_types=message_type.INFO):
+    observer.create(event_type, {"message": message, "system_name": system_name, "message_type": message_types})
 
 def _parse_report_type(slug: str) -> report_type_enum:
     """Разбирает slug формата отчёта."""
@@ -130,6 +134,18 @@ def _find_default_recipe():
         None,
     )
 
+
+@api.app.after_request
+def log_web(response):
+    """Перехватеывает все HTTP-ответы."""
+    if response.status_code >= 400:
+        mt = message_type.ERROR
+    else:
+        mt = message_type.INFO
+
+    observer.create(event_types.WEB_REQUEST, {"message": f"Веб-запрос {request.method} {request.path} пришел с ответом {response.status_code}", "message_type": mt})
+
+    return response
 
 
 @api.route("/api/get_report", methods=["GET"])
@@ -386,6 +402,8 @@ def create_entity_with_code(entity_type: str, code: str):
             409,
         )
 
+    _log(event_types.CREATE_OBJECT_WITH_CODE, f"Создан объект {entity_type!r} с кодоам {model.unique_code}", "crud")
+
     return "", 201, {"Location": f"/api/{entity_type}/{code}"}
 
 
@@ -433,6 +451,8 @@ def create_entity(entity_type: str):
             409,
         )
 
+    _log(event_types.CREATE_OBJECT, f"Создан объект {entity_type!r}", "crud")
+
     return "", 201, {"Location": f"/api/{entity_type}/{model.unique_code}"}
 
 
@@ -456,6 +476,8 @@ def delete(code: str):
 
     if not resolver.remove(existing):
         return "Ошибка удаления из хранилища", 500
+
+    _log(event_types.DELETE_OBJECT, f"Объект удален", "crud")
 
     return "", 204
 
@@ -494,10 +516,13 @@ def update(code: str):
         if not resolver.replace(existing, updated_model):
             return "Ошибка обновления: сущность не найдена", 500
 
+        _log(event_types.UPDATE_OBJECT, f"Объект обновлен", "crud")
+
     except arguments_exeption as e:
         return str(e), 400
     except Exception as e:
         return f"Ошибка обновления: {str(e)}", 400
+
 
     return "", 200
 
@@ -562,7 +587,60 @@ def osv_report():
 
     return _send_report_file(result, f"osv.{fmt.slug}")
 
+@api.route("/api/logs", methods=["POST"])
+def get_logs():
+    """Показыыает все логги"""
+    try:
+        r = logger().query()
+    except (ValueError, arguments_exeption) as e:
+        return str(e), 400
 
+    return {"count": len(r), "items": r}, 200
+
+@api.route("/api/logs/filter", methods=["POST"])
+def filter_logs():
+    """Показывает все логги с сортировкой"""
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return "Тело должно быть JSON-объектом", 400
+
+    try:
+        r = logger().query(body)
+    except (ValueError, arguments_exeption) as e:
+        return str(e), 400
+
+    return {"count": len(r), "items": r}, 200
+
+@api.route("/api/log/download", methods=["POST"])
+def download_logs():
+    """Позволяет скачивать логги в выбранном формаите"""
+    fmt = (request.args.get("fmt") or "").lower()
+    try:
+        report_type = _parse_report_type(fmt)
+    except ValueError:
+        return "Неизвестный формат", 400
+
+    body = request.get_json(silent=True) or {}
+    try:
+        rows = logger().query(body)
+    except (ValueError, arguments_exeption) as e:
+        return str(e), 400
+
+    if not rows:
+        rows = [{"period": "","system_name": "","message_type": "","message": "Нет записей по заданным фильтрам"}]
+
+    table = report_data_dto.create(header=list(logger.LOG_FIELDS), rows=[[row[field] for field in logger.LOG_FIELDS] for row in rows])
+
+    try:
+        res = factory.create(report_type).build(table)
+    except Exception as e:
+        return f"Ошибка формирования отчета: {str(e)}", 500
+
+    if not res.is_binary:
+        return "Этот формат не является файлом", 400
+
+    return _send_binary(res, f"logs.{report_type.slug}")
+    
 if __name__ == "__main__":
     api.add_api('openapi.yaml')
     api.run(host="127.0.0.1", port=1111)

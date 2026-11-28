@@ -7,6 +7,9 @@ from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.range_model import range_model
 from Src.Models.warehouse_model import warehouse_model
 from Src.Models.transaction_model import transaction_model
+from Src.Core.event_type import event_types
+from Src.Core.message_type import message_type
+from Src.Logics.observer import observer
 
 
 class storage_manager(abstract_manager):
@@ -47,6 +50,8 @@ class storage_manager(abstract_manager):
             if models_path.exists():
                 if storage_deserializer(self).load(str(models_path)):
                     self._is_loaded = True
+                    observer.create(event_types.LOAD_STORAGE, {"message": f"Хранилище загружено из {models_path}","system_name": "storage","message_type": message_type.INFO})
+                    observer.create(event_types.CHANGE_STORAGE, {"message": "Данные изменены","system_name": "storage","message_type": message_type.INFO})
                     return True
 
         if raw_file:
@@ -54,6 +59,8 @@ class storage_manager(abstract_manager):
             if raw_path.exists():
                 if storage_bootstrap(self).first_start(str(raw_path)):
                     self._is_loaded = True
+                    observer.create(event_types.LOAD_STORAGE, {"message": f"Хранилище загружено из {raw_path}","system_name": "storage","message_type": message_type.INFO})
+                    observer.create(event_types.CHANGE_STORAGE, {"message": "Данные изменены","system_name": "storage","message_type": message_type.INFO})
                     return True
 
         return False
@@ -130,10 +137,22 @@ class storage_manager(abstract_manager):
         return False
 
     def add_transaction(self, value: transaction_model) -> bool:
-        if self._is_unique(self._transactions, value):
-            self._transactions.append(value)
-            return True
-        return False
+        if not self._is_unique(self._transactions, value):
+            return False
+        self._transactions.append(value)
+
+        if value.value > 0:
+            event = event_types.WAREHOUSE_INCOME
+            what_event = "Приход"
+        elif value.value < 0:
+            event = event_types.WAREHOUSE_OUTCOME
+            what_event = "Расход"
+
+        observer.create(event, {"message": (f"{what_event}: {abs(value.value)} "
+        f"в продукте {value.nomenclatures.name} "
+        f"на складе {value.warehouses.name}"),"system_name": "warehouse","message_type": message_type.INFO})
+        return True
+        
 
     def load_default_ranges(self) -> None:
         gram = range_model.create_gram()

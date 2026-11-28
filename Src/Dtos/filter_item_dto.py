@@ -20,7 +20,11 @@ class filter_item_dto:
         "address",
         "description",
         "time",
+        "system_name",
+        "message_type",
+        "message",
     )
+    
     _NUMERIC_FIELDS: tuple = (
         "conversion_factor",
         "brutto",
