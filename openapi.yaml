@@ -351,6 +351,47 @@ components:
             type: array
             items: {}
 
+    LogItem:
+      type: object
+      description: Одна запись журнала операций.
+      properties:
+        period:
+          type: string
+          description: Дата события в формате YYYY-MM-DD.
+          example: "2026-11-28"
+        system_name:
+          type: string
+          example: "crud"
+        message_type:
+          type: string
+          enum: [INFO, ERROR, DEBUG]
+          example: INFO
+        message:
+          type: string
+          example: "Создан объект 'nomenclature' с кодом ..."
+        unique_code:
+          type: string
+          description: Уникальный код записи журнала.
+      additionalProperties: true
+
+    LogResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: Количество возвращённых записей.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogItem'
+      example:
+        count: 1
+        items:
+          - period: "2026-11-28"
+            system_name: "crud"
+            message_type: INFO
+            message: "Создан объект 'nomenclature' с кодом ..."
+
   responses:
 
     BadRequest:
@@ -671,6 +712,83 @@ paths:
                   slug: "png"
                   code: 6
                   mime: "text/png"
+
+  /api/logs:
+    post:
+      summary: Весь журнал логгов
+      description: |
+        Возвращает весь накопленный журнал.
+      operationId: main.get_logs
+      responses:
+        '200':
+          description: Журнал логгов.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/logs/filter:
+    post:
+      summary: Фильтрация журнала логгов
+      description: |
+        Фильтрует журнал через десериализацию тела в `filter_dto`.
+        Поддерживаются поля `period`, `system_name`, `message_type`, `message`
+        и типы `equals`, `like`, `between`, `alphabet`, `alphabet_desc`.
+      operationId: main.filter_logs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FilterRequest'
+            example:
+              filters:
+                - filter_name: message_type
+                  filter_value: ERROR
+                  filter_type: equals
+                - filter_name: period
+                  filter_type: alphabet_desc
+      responses:
+        '200':
+          description: Результат фильтрации журнала.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/log/download:
+    post:
+      summary: Скачать журнал логгов файлом
+      description: |
+        Отдаёт бинарный файл журнала через общую фабрику отчётов.
+        Для текстовых форматов (TXT, HTML, XML) возвращается 400
+      operationId: main.download_logs
+      parameters:
+        - $ref: '#/components/parameters/Fmt'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FilterRequest'
+            example:
+              filters:
+                - filter_name: system_name
+                  filter_value: crud
+                  filter_type: equals
+                - filter_name: period
+                  filter_type: alphabet_desc
+      responses:
+        '200':
+          $ref: '#/components/responses/BinaryFile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /api/{entity_type}/{code}:
     put:
